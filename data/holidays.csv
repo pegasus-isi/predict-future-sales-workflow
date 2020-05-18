@@ -1,0 +1,90 @@
+date_block_num,holiday_date,holiday_name,holiday_type
+0,2013.01.01,New Year's Day,National Holiday
+0,2013.01.02,New Year Holiday,National Holiday
+0,2013.01.03,New Year Holiday,National Holiday
+0,2013.01.04,New Year Holiday,National Holiday
+0,2013.01.05,New Year Holiday,National Holiday
+0,2013.01.06,New Year Holiday,National Holiday
+0,2013.01.07,Orthodox Christmas Day,National Holiday - Orthodox
+0,2013.01.08,New Year Holiday,National Holiday
+1,2013.02.14,Valentine's Day,Observance
+1,2013.02.23,Defender of the Fatherland Day,National Holiday
+2,2013.03.08,International Women's Day,National Holiday
+4,2013.05.01,Labor Day,National Holiday
+4,2013.05.02,Labor Day Holiday,National Holiday
+4,2013.05.03,Labor Day Holiday,National Holiday
+4,2013.05.05,Orthodox Easter Day,Observance - Orthodox
+4,2013.05.09,Victory Day,National Holiday
+4,2013.05.10,Victory Day Holiday,National Holiday
+5,2013.06.12,Russia Day,National Holiday
+8,2013.09.01,Day of Knowledge,Observance
+10,2013.11.04,Unity Day,National Holiday
+11,2013.12.30,New Year Holiday Week,Observance
+11,2013.12.31,New Year Holiday Week,Observance
+12,2014.01.01,New Year's Day,National Holiday
+12,2014.01.02,New Year Holiday,National Holiday
+12,2014.01.03,New Year Holiday,National Holiday
+12,2014.01.06,New Year Holiday,National Holiday
+12,2014.01.07,Orthodox Christmas Day,National Holiday - Orthodox
+12,2014.01.08,New Year Holiday,National Holiday
+13,2014.02.14,Valentine's Day,Observance
+13,2014.02.22,Defender of the Fatherland Holiday,National Holiday
+13,2014.02.23,Defender of the Fatherland Day,National Holiday
+14,2014.03.08,International Women's Day,National Holiday
+14,2014.03.09,International Women's Day Holiday,National Holiday
+14,2014.03.10,International Women's Day Off,National Holiday
+15,2014.04.20,Orthodox Easter Day,Observance - Orthodox
+16,2014.05.01,Labor Day,National Holiday
+16,2014.05.02,Labor Day Holiday,National Holiday
+16,2014.05.03,Labor Day Holiday,National Holiday
+16,2014.05.09,Victory Day,National Holiday
+16,2014.05.10,Victory Day Holiday,National Holiday
+16,2014.05.11,Victory Day Holiday,National Holiday
+17,2014.06.12,Russia Day,National Holiday
+17,2014.06.13,Russia Day Weekend,National Holiday
+17,2014.06.14,Russia Day Weekend,National Holiday
+17,2014.06.15,Russia Day Weekend,National Holiday
+20,2014.09.01,Day of Knowledge,Observance
+22,2014.11.01,Public Holiday,National Holiday
+22,2014.11.02,Public Holiday,National Holiday
+22,2014.11.03,Public Holiday,National Holiday
+22,2014.11.04,Unity Day,National Holiday
+23,2014.12.30,New Year Holiday Week,Observance
+23,2014.12.31,New Year Holiday Week,Observance
+24,2015.01.01,New Year's Day,National Holiday
+24,2015.01.02,New Year Holiday,National Holiday
+24,2015.01.03,New Year Holiday,National Holiday
+24,2015.01.04,New Year Holiday,National Holiday
+24,2015.01.05,New Year Holiday,National Holiday
+24,2015.01.06,New Year Holiday,National Holiday
+24,2015.01.07,Orthodox Christmas Day,National Holiday - Orthodox
+24,2015.01.08,New Year Holiday,National Holiday
+24,2015.01.09,New Year Holiday,National Holiday
+25,2015.02.14,Valentine's Day,Observance
+25,2015.02.23,Defender of the Fatherland Day,National Holiday
+25,2015.02.27,Special Operations Forces Day,Observance
+26,2015.03.08,International Women's Day,National Holiday
+26,2015.03.09,International Women's Day Off,National Holiday
+27,2015.04.12,Orthodox Easter Day,Observance - Orthodox
+28,2015.05.01,Labor Day,National Holiday
+28,2015.05.02,Labor Day Holiday,National Holiday
+28,2015.05.03,Labor Day Holiday,National Holiday
+28,2015.05.04,Public Holiday,National Holiday
+28,2015.05.09,Victory Day,National Holiday
+28,2015.05.10,Victory Day Holiday,National Holiday
+28,2015.05.11,Victory Day Holiday,National Holiday
+29,2015.06.12,Russia Day,National Holiday
+29,2015.06.13,Russia Day Holiday,National Holiday
+29,2015.06.14,Russia Day Holiday,National Holiday
+32,2015.09.01,Day of Knowledge,Observance
+34,2015.11.04,Unity Day,National Holiday
+35,2015.12.30,New Year Holiday Week,Observance
+35,2015.12.31,New Year Holiday Week,Observance
+36,2016.01.01,New Year's Day,National Holiday
+36,2016.01.02,New Year Holiday,National Holiday
+36,2016.01.03,New Year Holiday,National Holiday
+36,2016.01.04,New Year Holiday,National Holiday
+36,2016.01.05,New Year Holiday,National Holiday
+36,2016.01.06,New Year Holiday,National Holiday
+36,2016.01.07,Orthodox Christmas Day,National Holiday - Orthodox
+36,2016.01.08,New Year Holiday,National Holiday
