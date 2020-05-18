@@ -8,33 +8,29 @@ from IPython import embed
 Preprocesses data for the Future Sales Predictions
 
 	FILES IN: "sales_train.csv",
-	          "item_translated_new.csv",
-              "categories_translated_new.csv",
-			  "test.csv",
-			  "shops_translated_new.csv"
+		"item_translated_new.csv",
+		"categories_translated_new.csv",
+		"test.csv",
+		"shops_translated_new.csv"
 
 	FILES OUT: 'items_preprocessed.pickle',
-	           'shops_preprocessed.pickle',
-			   'categories_preprocessed.pickle',
-			   'train_preprocessed.pickle',
-			   'test_preprocessed.pickle'
+		'shops_preprocessed.pickle',
+		'categories_preprocessed.pickle',
+		'train_preprocessed.pickle',
+		'test_preprocessed.pickle'
 
  """
 
-def remove_outliners(trainset):
-	
+def remove_outliers(trainset):	
 	trainset = trainset[(trainset.item_price < 100000 )& (trainset.item_cnt_day < 1000)]
 	trainset = trainset[trainset.item_price > 0].reset_index(drop = True)
-	trainset.loc[trainset.item_cnt_day < 1, "item_cnt_day"] = 0
-	
+	trainset.loc[trainset.item_cnt_day < 1, "item_cnt_day"] = 0	
 	return trainset
 
 
-def replace_shop_ids(dataset,ids_pairs,id_replaced):
-	
+def replace_shop_ids(dataset,ids_pairs,id_replaced):	
 	for id_pair in ids_pairs:
 		dataset.loc[dataset[id_replaced] == id_pair[0], id_replaced]  = id_pair[1]
-
 	return dataset
 
 
@@ -75,7 +71,7 @@ def preprocess_shops(shops):
 
 def preprocess_trainset(trainset,shop_ids_pairs):
 
-	trainset = remove_outliners(trainset)
+	trainset = remove_outliers(trainset)
 	trainset = replace_shop_ids(trainset, shop_ids_pairs,"shop_id")
 	shops_ids_drop = [9,20,33]
 	trainset = drop_rows_by_col_val(trainset,"shop_id",shops_ids_drop)
