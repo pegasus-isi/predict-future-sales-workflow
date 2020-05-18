@@ -65,12 +65,12 @@ tc.add_transformations(eda, preprocess)
 tc.write()
 
 # --- Replica Catalog ----------------------------------------------------------
-items = File("items.csv")
-item_categories = File("item_categories.csv")
-shops = File("shops.csv")
-sales_train = File("sales_train.csv")
 test = File("test.csv")
+items = File("items.csv")
+shops = File("shops.csv")
 holidays = File("holidays.csv")
+sales_train = File("sales_train.csv")
+item_categories = File("item_categories.csv")
 
 rc = ReplicaCatalog()\
         .add_replica("local", "items.csv", str(Path(__file__).parent.resolve() / "data/items_translated.csv"))\
@@ -80,3 +80,30 @@ rc = ReplicaCatalog()\
         .add_replica("local", "test.csv", str(Path(__file__).parent.resolve() / "data/test.csv"))\
         .add_replica("local", "holidays.csv", str(Path(__file__).parent.resolve() / "data/holidays.csv"))\
         .write()
+
+# --- Workflow -------------------------------------------------------------------
+ts = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+wf = Workflow(("predict-sales-workflow-%s" % ts), infer_dependencies=True)
+
+
+# --- Add EDA Job ----------------------------------------------------------------
+eda_output = File("EDA.pdf")
+eda_job = Job(eda)\
+            .add_inputs(items,item_categories, shops, sales_train)\
+            .add_outputs(eda_output)
+
+# --- Add Preprocess Job ---------------------------------------------------------
+test_preprocessed = File("test_preprocessed.pickle")
+items_preprocessed = File("items_preprocessed.pickle")
+shops_preprocessed = File("shops_preprocessed.pickle")
+sales_train_preprocessed = File("sales_train_preprocessed.pickle")
+item_categories_preprocessed = File("item_categories_preprocessed.pickle")
+
+preprocess_job = Job(preprocess)\
+                    .add_inputs(items,item_categories, shops, sales_train, test)\
+                    .add_outputs(test_preprocessed, items_preprocessed, shops_preprocessed, sales_train_preprocessed, item_categories_translated)
+
+# --- Add Jobs to the Workflow dag -----------------------------------------------
+wf.add_jobs(eda_job, preprocess_job)
+
+wf.write()
