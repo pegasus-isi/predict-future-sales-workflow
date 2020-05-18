@@ -1,1 +1,4 @@
-# predict-future-sales-workflow
+# Predict Future Sales Workflow
+
+
+![](img/workflow_draft.png)

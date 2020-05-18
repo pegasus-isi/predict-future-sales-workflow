@@ -8,8 +8,8 @@ from IPython import embed
 Preprocesses data for the Future Sales Predictions
 
 	FILES IN: "sales_train.csv",
-	          "items.csv",
-	          "item_categories.csv",
+	          "item_translated_new.csv",
+              "categories_translated_new.csv",
 			  "test.csv",
 			  "shops_translated_new.csv"
 
@@ -77,8 +77,9 @@ def preprocess_trainset(trainset,shop_ids_pairs):
 
 	trainset = remove_outliners(trainset)
 	trainset = replace_shop_ids(trainset, shop_ids_pairs,"shop_id")
-	shop_ids_drop_train = [9,20,33]
-	trainset = drop_rows_by_col_val(trainset,"shop_id",shop_ids_drop_train)
+	shops_ids_drop = [9,20,33]
+	trainset = drop_rows_by_col_val(trainset,"shop_id",shops_ids_drop)
+	categories_ids_drop = [8,80,81,82]
 	return trainset
 
 def preprocess_testset(testset,shop_ids_pairs):
@@ -89,8 +90,8 @@ def main():
 
     # Read in the data for the analysis
     sales_trainset   = pd.read_csv("sales_train.csv")
-    items            = pd.read_csv("items.csv")
-    categories       = pd.read_csv("item_categories.csv")
+    items            = pd.read_csv("item_translated_new.csv")
+    categories       = pd.read_csv("categories_translated_new.csv")
     testset          = pd.read_csv("test.csv")
     shops            = pd.read_csv("shops_translated_new.csv")
        
