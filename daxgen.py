@@ -49,7 +49,7 @@ tc = TransformationCatalog()
 eda = Transformation(
                 "eda",
                 site="condorpool",
-                pfn="{PWD}/bin/eda.py",
+                pfn=str(Path(__file__).parent.resolve() / "bin/EDA.py"),
                 is_stageable=True
             )
 
@@ -57,7 +57,7 @@ eda = Transformation(
 preprocess = Transformation(
                 "preprocess",
                 site="condorpool",
-                pfn="{PWD}/bin/preprocess.py",
+                pfn=str(Path(__file__).parent.resolve() / "bin/preprocess.py"),
                 is_stageable=True
             )
 
@@ -73,9 +73,9 @@ sales_train = File("sales_train.csv")
 item_categories = File("item_categories.csv")
 
 rc = ReplicaCatalog()\
-        .add_replica("local", "items.csv", str(Path(__file__).parent.resolve() / "data/items_translated.csv"))\
-        .add_replica("local", "item_categories.csv", str(Path(__file__).parent.resolve() / "data/item_categories_translated.csv"))\
-        .add_replica("local", "shops.csv", str(Path(__file__).parent.resolve() / "data/shops_translated.csv"))\
+        .add_replica("local", "items.csv", str(Path(__file__).parent.resolve() / "data/items.csv"))\
+        .add_replica("local", "item_categories.csv", str(Path(__file__).parent.resolve() / "data/item_categories.csv"))\
+        .add_replica("local", "shops.csv", str(Path(__file__).parent.resolve() / "data/shops.csv"))\
         .add_replica("local", "sales_train.csv", str(Path(__file__).parent.resolve() / "data/sales_train.csv"))\
         .add_replica("local", "test.csv", str(Path(__file__).parent.resolve() / "data/test.csv"))\
         .add_replica("local", "holidays.csv", str(Path(__file__).parent.resolve() / "data/holidays.csv"))\
@@ -101,7 +101,7 @@ item_categories_preprocessed = File("item_categories_preprocessed.pickle")
 
 preprocess_job = Job(preprocess)\
                     .add_inputs(items,item_categories, shops, sales_train, test)\
-                    .add_outputs(test_preprocessed, items_preprocessed, shops_preprocessed, sales_train_preprocessed, item_categories_translated)
+                    .add_outputs(test_preprocessed, items_preprocessed, shops_preprocessed, sales_train_preprocessed, item_categories_preprocessed)
 
 # --- Add Jobs to the Workflow dag -----------------------------------------------
 wf.add_jobs(eda_job, preprocess_job)
