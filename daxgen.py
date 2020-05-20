@@ -49,7 +49,7 @@ tc = TransformationCatalog()
 eda = Transformation(
                 "eda",
                 site="condorpool",
-                pfn=str(Path(__file__).parent.resolve() / "bin/EDA.py"),
+                pfn="${PWD}/bin/EDA.py",
                 is_stageable=True
             )
 
@@ -57,7 +57,7 @@ eda = Transformation(
 preprocess = Transformation(
                 "preprocess",
                 site="condorpool",
-                pfn=str(Path(__file__).parent.resolve() / "bin/preprocess.py"),
+                pfn="${PWD}/bin/preprocess.py",
                 is_stageable=True
             )
 
