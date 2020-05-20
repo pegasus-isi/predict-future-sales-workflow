@@ -132,6 +132,16 @@ def create_first_page(pdf):
     firstPage.text(0.5,0.5,text, size=24, ha="center")
     pdf.savefig()
 
+def prepare_data_row_barcharts(sales_trainset):
+    monthly_sales = sales_trainset.groupby(["date_block_num"])["item_cnt_day"].agg(["sum"]).reset_index()
+    shop_sales    = sales_trainset.groupby(["shop_id"])["item_cnt_day"].agg(["sum"]).reset_index().rename(columns={'sum':'total_sale'})
+    list_barcharts_dict = []
+    list_barcharts_dict.append({"width": MONTHS, "data": monthly_sales["sum"].values, "title": "Number of Items Sold Each Month",
+        "x_label": "MONTHS", "max_val":1000})
+    list_barcharts_dict.append({"width": range(shop_sales.shape[0]), "data": shop_sales["total_sale"].values, "title": "Total Sales in Each Store",
+     "x_label":"SHOP ID", "max_val":60000})
+
+    return list_barcharts_dict   
 
 def main():
 
@@ -167,14 +177,7 @@ def main():
     create_boxplot(pdf, sales_trainset.item_price, sales_trainset.item_price.min(),
     	sales_trainset.item_price.max()*1.1,"Prices of Items")
 
-
-    monthly_sales = sales_trainset.groupby(["date_block_num"])["item_cnt_day"].agg(["sum"]).reset_index()
-    shop_sales    = sales_trainset.groupby(["shop_id"])["item_cnt_day"].agg(["sum"]).reset_index().rename(columns={'sum':'total_sale'})
-    list_barcharts_dict = []
-    list_barcharts_dict.append({"width": MONTHS, "data": monthly_sales["sum"].values, "title": "Number of Items Sold Each Month",
-    	"x_label": "MONTHS", "max_val":1000})
-    list_barcharts_dict.append({"width": range(shop_sales.shape[0]), "data": shop_sales["total_sale"].values, "title": "Total Sales in Each Store",
-     "x_label":"SHOP ID", "max_val":60000})
+    list_barcharts_dict = prepare_data_row_barcharts(sales_trainset)
     create_rows_barcharts(pdf, list_barcharts_dict, num_figures = 2)
     
     pdf.close()

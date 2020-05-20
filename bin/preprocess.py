@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+from IPython import embed
 import re
 import pickle
 import pandas as pd
@@ -141,7 +141,7 @@ def preprocess_items(items):
 def main():
     test = pd.read_csv("test.csv")
     shops = pd.read_csv("shops.csv")
-    items = pd.read_csv("items.csv")
+    items = pd.read_csv("items_old.csv")
     sales_train = pd.read_csv("sales_train.csv")
     item_categories = pd.read_csv("item_categories.csv")
 
@@ -154,7 +154,7 @@ def main():
     add_item_subcategories(item_categories)
 
     preprocess_items(items)
-
+    embed()
     pickle.dump(test, open('test_preprocessed.pickle', 'wb'), protocol=4)
     pickle.dump(shops, open('shops_preprocessed.pickle', 'wb'), protocol=4)
     pickle.dump(items, open('items_preprocessed.pickle', 'wb'), protocol=4)

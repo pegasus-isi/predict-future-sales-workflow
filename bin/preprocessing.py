@@ -1,25 +1,30 @@
 import pandas as pd
 import numpy as np
+import pickle
 import seaborn as sns
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
-from IPython import embed
+
 """
 Preprocesses data for the Future Sales Predictions
 
-	FILES IN: "sales_train.csv",
-		"item_translated_new.csv",
-		"categories_translated_new.csv",
+	FILES IN: 
+		"sales_train.csv",
+		"items.csv",
+		"item_categories.csv",
 		"test.csv",
-		"shops_translated_new.csv"
+		"shops.csv"
 
-	FILES OUT: 'items_preprocessed.pickle',
+	FILES OUT: 
+		'items_preprocessed.pickle',
 		'shops_preprocessed.pickle',
 		'categories_preprocessed.pickle',
 		'train_preprocessed.pickle',
 		'test_preprocessed.pickle'
 
  """
+
+# -----------------           HELPER  FUNCTIONS       -------------------------
+
 
 def remove_outliers(trainset):	
 	trainset = trainset[(trainset.item_price < 100000 )& (trainset.item_cnt_day < 1000)]
@@ -40,67 +45,75 @@ def drop_rows_by_index(dataframe, rows_ids):
 	return dataframe
 
 
-
 def drop_rows_by_col_val(dataframe, col_name, ids):
 	for i in ids:
 		dataframe.drop(dataframe.loc[dataframe[col_name] == i].index, axis = 0, inplace = True)
 	return dataframe
 
 
-def preprocess_shops(shops):
-	
-	#Rename columns
-	shops = shops.rename(columns = {"shop_name_translated":"shop_name"})
+
+
+# -----------------        PREPROCESSING FUNCTIONS       -------------------------
+
+
+def preprocess_shops(shops):	
 	shops_ids_to_drop = [0,1,11,40,9,20,33]
 	shops             = drop_rows_by_index(shops,shops_ids_to_drop )
-	#Create new categories based on shop' s names
-	shops["city"]     = shops.shop_name.str.split(" ").map( lambda x: x[0] )
-	shops["category"] = shops.shop_name.str.split(" ").map( lambda x: x[1].lower() )
-
-	common_categories = []
-	for cat in shops.category.unique():
-		if len(shops[shops.category == cat]) > 4:
-			common_categories.append(cat)
-
-	shops.category         = shops.category.apply( lambda x: x if (x in common_categories) else "etc" )	
-	shops["shop_category"] = LabelEncoder().fit_transform( shops.category )
-	shops["shop_city"]     = LabelEncoder().fit_transform( shops.city )
-	shops                  = shops[["shop_id", "shop_category", "shop_city"]]
-
 	return shops
 
-def preprocess_trainset(trainset,shop_ids_pairs):
+def preprocess_categories(categories, categories_ids_drop):
+	categories = drop_rows_by_index(categories, categories_ids_drop)
+	return categories
 
+
+def preprocess_items(items,categories_ids_drop):
+	items      = drop_rows_by_index(items, categories_ids_drop)
+	return items
+
+
+def preprocess_trainset(trainset, shop_ids_pairs, categories_ids_drop, items):
 	trainset = remove_outliers(trainset)
 	trainset = replace_shop_ids(trainset, shop_ids_pairs,"shop_id")
 	shops_ids_drop = [9,20,33]
 	trainset = drop_rows_by_col_val(trainset,"shop_id",shops_ids_drop)
-	categories_ids_drop = [8,80,81,82]
+
+	for i in categories_ids_drop:
+		trainset.drop(trainset.loc[(trainset['item_id']
+			.map(items['item_category_id'])== i)].index.values,axis = 0,inplace = True)
 	return trainset
+
 
 def preprocess_testset(testset,shop_ids_pairs):
 	testset = replace_shop_ids(testset, shop_ids_pairs,"shop_id")
 	return testset
 
+
+
 def main():
 
     # Read in the data for the analysis
     sales_trainset   = pd.read_csv("sales_train.csv")
-    items            = pd.read_csv("item_translated_new.csv")
-    categories       = pd.read_csv("categories_translated_new.csv")
+    items            = pd.read_csv("items.csv")
+    categories       = pd.read_csv("item_categories.csv")
     testset          = pd.read_csv("test.csv")
-    shops            = pd.read_csv("shops_translated_new.csv")
+    shops            = pd.read_csv("shops.csv")
        
     # Replace store ids of duplicated stores
-    shop_ids_pairs = [[0,57], [1,58], [11,10],[40,39]]
+    shop_ids_pairs      = [[0,57], [1,58], [11,10],[40,39]]
+    categories_ids_drop = [8,80,81,82]
 
-    
-    sales_trainset = preprocess_trainset(sales_trainset, shop_ids_pairs)
-    testset        = preprocess_testset(testset,shop_ids_pairs)
+    sales_trainset = preprocess_trainset(sales_trainset, shop_ids_pairs, categories_ids_drop, items)
+    testset        = preprocess_testset(testset, shop_ids_pairs)
     shops          = preprocess_shops(shops)
+    categories     = preprocess_categories(categories, categories_ids_drop)
+    items          = preprocess_items(items, categories_ids_drop)
 
 
-
+    pickle.dump(testset, open('test_preprocessed.pickle', 'wb'), protocol = 4)
+    pickle.dump(shops, open('shops_preprocessed.pickle', 'wb'), protocol = 4)
+    pickle.dump(items, open('items_preprocessed.pickle', 'wb'), protocol = 4)
+    pickle.dump(categories, open('categories_preprocessed.pickle', 'wb'), protocol = 4)
+    pickle.dump(sales_trainset, open('sales_train_preprocessed.pickle', 'wb'), protocol = 4)
 
 
 
