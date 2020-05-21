@@ -6,8 +6,21 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 # -*- coding: utf-8 -*-
-"""Exploratory Data Analysis of Kaggle's Predict Future Sales Dataset.
-	This script produces a PDF file with different types of plots of data.
+"""
+
+
+Exploratory Data Analysis of Kaggle's Predict Future Sales Dataset.
+This script produces a PDF file with different types of plots of data.
+
+    FILES IN: 
+        "sales_train.csv"
+        "items.csv"
+        "item_categories.csv"
+        "shops.csv"
+
+
+    FILES OUT: 
+        'EDA.pdf'
 
 """
 FIG_SIZE_X = 18

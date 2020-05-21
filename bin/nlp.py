@@ -11,7 +11,7 @@ from sklearn.cluster import KMeans
 
 
 """
-Preprocesses data for the Future Sales Predictions
+NLP for the Future Sales Predictions
 
 	FILES IN: 
 		"items_translated.csv",

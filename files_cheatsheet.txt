@@ -1,0 +1,75 @@
+FILE INPUTS AND OUTPUTS CHEATSHEET
+
+--------------------------------------------------------------
+
+SCRIPT: EDA.py
+
+Exploratory Data Analysis of Kaggle's Predict Future Sales Dataset.
+This script produces a PDF file with different types of plots of data.
+
+    FILES IN: 
+        "sales_train.csv"
+        "items.csv"
+        "item_categories.csv"
+        "shops.csv"
+
+
+    FILES OUT: 
+        'EDA.pdf'
+
+---------------------------------------------------------------
+
+SCRIPT: preprocessing.py
+
+
+Preprocesses data for the Future Sales Predictions
+
+	FILES IN: 
+		"sales_train.csv",
+		"items.csv",
+		"item_categories.csv",
+		"test.csv",
+		"shops.csv"
+
+	FILES OUT: 
+		'items_preprocessed.pickle',
+		'shops_preprocessed.pickle',
+		'categories_preprocessed.pickle',
+		'train_preprocessed.pickle',
+		'test_preprocessed.pickle'
+
+-----------------------------------------------------------------
+
+SCRIPT: nlp.py
+
+NLP data for the Future Sales Predictions
+
+	FILES IN: 
+		"items_translated.csv",
+		"item_categories.csv",
+		"shops.csv"
+
+	FILES OUT: 
+		'tenNN_items.pickle'
+		'items_nlp.pickle'
+		'items_clusters.pickle'
+		'shops_nlp.pickle'
+		'threeNN_shops.pickle'
+
+----------------------------------------------------------------
+
+SCRIPT: feature_eng_1.py
+
+Feature Engineering Part 1 Basics
+
+	FILES IN: 
+		'items_preprocessed.pickle'
+		'shops_preprocessed.pickle',
+		'categories_preprocessed.pickle'
+
+	FILES OUT: 
+		'shops_feature_eng_1.pickle',
+		'categories_feature_eng_1.pickle',
+		'items_feature_eng_1.pickle'
+
+
