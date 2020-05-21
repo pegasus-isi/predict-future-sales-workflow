@@ -3,13 +3,11 @@ import numpy as np
 import string
 import pickle
 import os
-#import plotly.express as px
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 from sklearn.manifold import TSNE
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import KMeans
-from IPython import embed
 
 
 """
