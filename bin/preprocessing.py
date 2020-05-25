@@ -18,7 +18,7 @@ Preprocesses data for the Future Sales Predictions
 		'items_preprocessed.pickle',
 		'shops_preprocessed.pickle',
 		'categories_preprocessed.pickle',
-		'train_preprocessed.pickle',
+		'sales_train_preprocessed.pickle',
 		'test_preprocessed.pickle'
 
  """
@@ -55,22 +55,23 @@ def drop_rows_by_col_val(dataframe, col_name, ids):
 
 # -----------------        PREPROCESSING FUNCTIONS       -------------------------
 
-
+# deletes 7 entries from the stores
 def preprocess_shops(shops):	
 	shops_ids_to_drop = [0,1,11,40,9,20,33]
 	shops             = drop_rows_by_index(shops,shops_ids_to_drop )
 	return shops
 
+# deletes 4 unneeded categories
 def preprocess_categories(categories, categories_ids_drop):
 	categories = drop_rows_by_index(categories, categories_ids_drop)
 	return categories
 
-
+# deletes 4 items
 def preprocess_items(items,categories_ids_drop):
 	items      = drop_rows_by_index(items, categories_ids_drop)
 	return items
 
-
+# 18953 rows of undeeded data are removed
 def preprocess_trainset(trainset, shop_ids_pairs, categories_ids_drop, items):
 	trainset = remove_outliers(trainset)
 	trainset = replace_shop_ids(trainset, shop_ids_pairs,"shop_id")

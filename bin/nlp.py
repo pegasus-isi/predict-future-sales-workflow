@@ -3,20 +3,23 @@ import numpy as np
 import string
 import pickle
 import os
+#import plotly.express as px
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 from sklearn.manifold import TSNE
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import KMeans
+from IPython import embed
 
 
 """
-NLP for the Future Sales Predictions
+Preprocesses data for the Future Sales Predictions
 
 	FILES IN: 
 		"items_translated.csv",
 		"item_categories.csv",
 		"shops.csv"
+
 
 	FILES OUT: 
 		'tenNN_items.pickle'

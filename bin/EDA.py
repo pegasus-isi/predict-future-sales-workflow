@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-# -*- coding: utf-8 -*-
-"""
 
+"""
+Exploratory Data Analysis of Kaggle's Predict Future Sales Dataset.
+This script produces a PDF file with different types of plots of data.
+
+SCRIPT: EDA.py
 
 Exploratory Data Analysis of Kaggle's Predict Future Sales Dataset.
 This script produces a PDF file with different types of plots of data.
@@ -21,8 +23,9 @@ This script produces a PDF file with different types of plots of data.
 
     FILES OUT: 
         'EDA.pdf'
-
 """
+
+
 FIG_SIZE_X = 18
 FIG_SIZE_Y = 10
 

@@ -1,127 +1,84 @@
 import pandas as pd
 import numpy as np
-import re
 import pickle
-import seaborn as sns
-from sklearn.preprocessing import LabelEncoder
-
+from itertools import product
+from IPython import embed
 
 """
-Feature Engineering Part 1 Basics
+
 
 	FILES IN: 
 		'items_preprocessed.pickle'
-		'shops_preprocessed.pickle',
 		'categories_preprocessed.pickle'
+		'shops_preprocessed.pickle'
+		'sales_train_preprocessed.pickle'
+		'test_preprocessed.pickle'
 
 	FILES OUT: 
-		'shops_feature_eng_1.pickle',
-		'categories_feature_eng_1.pickle',
-		'items_feature_eng_1.pickle'
+		'main_data_feature_eng_1.pickle'
+		'test_data_feature_eng_1.pickle'
+
 
  """
 
+# -----------------           HELPER  FUNCTIONS       -------------------------
 
-def feature_eng_shops(shops):
-	#Create new categories based on shop' s names
-	shops["city"]     = shops.shop_name.str.split(" ").map( lambda x: x[0] )
-	shops["category"] = shops.shop_name.str.split(" ").map( lambda x: x[1].lower() )
+'''
+Extends the training dataframe by adding entries for sales for each month 
+of every item an shop combination. 
+'''
+def dataframe_setup(train,cols):
 
-	common_categories = []
-	for cat in shops.category.unique():
-		if len(shops[shops.category == cat]) > 4:
-			common_categories.append(cat)
+    data_matrix = []
+    for i in range(34):
+        sales = train[train.date_block_num == i]
+        data_matrix.append( np.array(list( product( [i], sales.shop_id.unique(), sales.item_id.unique() ) ), dtype = np.int16) )
 
-	shops.category         = shops.category.apply( lambda x: x if (x in common_categories) else "etc" )	
-	shops["shop_category"] = LabelEncoder().fit_transform( shops.category )
-	shops["shop_city"]     = LabelEncoder().fit_transform( shops.city )
-	shops                  = shops[["shop_id", "shop_category", "shop_city"]]
+    data_matrix  = pd.DataFrame( np.vstack(data_matrix), columns = cols )
+    data_matrix.sort_values( cols, inplace = True )
 
-	return shops
+    return data_matrix
 
-
-def feature_eng_categories(categories):
-	categories["type_code"] = categories.item_category_name.apply( lambda x: x.split(" ")[0] ).astype(str)
-	
-	category = []
-	for cat in categories.type_code.unique():
-		if len(categories[categories.type_code == cat]) > 4: 
-			category.append( cat )
-
-	categories.type_code       = categories.type_code.apply(lambda x: x if (x in category) else "etc")
-	categories.type_code       = LabelEncoder().fit_transform(categories.type_code)
-	categories["split"]        = categories.item_category_name.apply(lambda x: x.split("-"))
-	categories["subtype"]      = categories.split.apply(lambda x: x[1].strip() if len(x) > 1 else x[0].strip())
-	categories["subtype_code"] = LabelEncoder().fit_transform( categories["subtype"] )
-	
-	categories = categories[["item_category_id", "subtype_code", "type_code"]]
-	
-	return categories
+def add_date_block(test, data,cols):
+    test["date_block_num"] = 34
+    test["date_block_num"] = test["date_block_num"].astype(np.int8)
+    data = pd.concat([data, test.drop(["ID"],axis = 1)], ignore_index=True, sort=False, keys=cols)
+    data.fillna( 0, inplace = True )
+    return test, data
 
 
+def monthly_sales_count(train, data,cols):
+    group         = train.groupby( cols ).agg( {"item_cnt_day": ["sum"]} )
+    group.columns = ["item_cnt_month"]
+    group.reset_index( inplace = True)
+    data = pd.merge( data, group, on = cols, how = "left" )
+    data["item_cnt_month"] = data["item_cnt_month"].fillna(0).clip(0,20).astype(np.float16)
 
-def feature_eng_items(items):
-    def name_correction(x):
-        x = x.lower()
-        x = x.partition('[')[0]
-        x = x.partition('(')[0]
-        x = re.sub('[^A-Za-z0-9А-Яа-я]+', ' ', x)
-        x = x.replace('  ', ' ')
-        x = x.strip()
-        return x
+    return data
 
-    items["item_name_p1"], items["item_name_p2"] = items.item_name.str.split("[", 1).str
-    items["item_name_p1"], items["item_name_p3"] = items.item_name.str.split("(", 1).str
+def merge_dataframes(data, categories, items):
+    data = pd.merge( data, items, on = ["item_id"], how = "left")
+    data = pd.merge( data, categories, on = ["item_category_id"], how = "left" )
+    data.drop(columns= ["item_name","item_category_name"], inplace = True)
 
-    items["item_name_p2"] = items.item_name_p2.str.replace('[^A-Za-z0-9А-Яа-я]+', " ").str.lower()
-    items["item_name_p3"] = items.item_name_p3.str.replace('[^A-Za-z0-9А-Яа-я]+', " ").str.lower()
-    items                 = items.fillna('0')
-    items["item_name"]    = items["item_name"].apply(lambda x: name_correction(x))
-    items.item_name_p2    = items.item_name_p2.apply( lambda x: x[:-1] if x !="0" else "0")
-
-    items["type"]          = items["item_name_p1"].apply(lambda x: x[0:8] if x.split(" ")[0] == "xbox" else x.split(" ")[0] )
-    items.loc[(items.type  == "x360") | (items.type == "xbox360") | (items.type == "xbox 360") ,"type"] = "xbox 360"
-    items.loc[ items.type  == "", "type"] = "mac"
-
-    items.type             = items.type.apply( lambda x: x.replace(" ", "") )
-    items.loc[ (items.type == 'pc' )| (items.type == 'pс') | (items.type == "pc"), "type" ] = "pc"
-    items.loc[ items.type  == 'рs3' , "type"] = "ps3"
-
-    group_sum = items.groupby(["type"]).agg({"item_id": "count"})
-    group_sum = group_sum.reset_index()
-
-    drop_cols = []
-    for cat in group_sum.type.unique():
-        if group_sum.loc[(group_sum.type == cat), "item_id"].values[0] <40:
-            drop_cols.append(cat)
-
-    items["item_name_p2"] = items["item_name_p2"].apply( lambda x: "etc" if (x in drop_cols) else x )
-    items["item_name_p2"] = LabelEncoder().fit_transform(items["item_name_p2"])
-    items["item_name_p3"] = LabelEncoder().fit_transform(items["item_name_p3"])
-
-    items = items.drop(["type"], axis = 1)
-    items.drop(["item_name", "item_name_p1"],axis = 1, inplace= True)
-    return items
-
+    return data
 
 def main():
 
-    # Read in the data for basic feature engineering
-    items            = pd.read_pickle('items_preprocessed.pickle')
-    categories       = pd.read_pickle('categories_preprocessed.pickle')
-    shops            = pd.read_pickle('shops_preprocessed.pickle')
+    # Read in the data for the analysis
+	items      = pd.read_pickle('items_preprocessed.pickle')
+	categories = pd.read_pickle('categories_preprocessed.pickle')
+	train      = pd.read_pickle('sales_train_preprocessed.pickle')
+	test       = pd.read_pickle('test_preprocessed.pickle')
+	cols       = ["date_block_num", "shop_id", "item_id"]
 
+	main_data       = dataframe_setup(train, cols)
+	main_data       = monthly_sales_count(train, main_data, cols)
+	test, main_data = add_date_block(test,main_data, cols)	
+	main_data       = merge_dataframes(main_data,categories,items)
 
-    shops            = feature_eng_shops(shops)
-    categories       = feature_eng_categories(categories)
-    items            = feature_eng_items(items)
-
-
-    pickle.dump(categories, open('categories_feature_eng_1.pickle', 'wb'), protocol = 4)
-    pickle.dump(shops, open('shops_feature_eng_1.pickle', 'wb'), protocol = 4)
-    pickle.dump(items, open('items_feature_eng_1.pickle', 'wb'), protocol = 4)
-
-
+	pickle.dump(main_data, open('main_data_feature_eng_1.pickle', 'wb'), protocol = 4)
+	pickle.dump(test, open('test_data_feature_eng_1.pickle', 'wb'), protocol = 4)
 
 
 if __name__ == "__main__":

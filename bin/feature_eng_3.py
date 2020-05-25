@@ -4,14 +4,7 @@ import pickle
 
 from IPython import embed
 """
-Creates 5 basic lag features for the data:
-LAG ON ITEM COUNT                     "item_cnt_month"
-LAG ON ITEMS AVERAGE COUNT            "date_avg_item_cnt"	
-LAG ON Specific ITEM AVERAGE COUNT    "date_item_avg_item_cnt"
-LAG on sales of any items per SHOP    "date_shop_avg_item_cnt"
-LAG on sales of SPEC items per SHOP   "date_shop_item_avg_item_cnt"
 
-	
 	FILES IN: 
 		'main_data_feature_eng_1.pickle'
 
@@ -19,6 +12,9 @@ LAG on sales of SPEC items per SHOP   "date_shop_item_avg_item_cnt"
 		'main_data_feature_eng_2.pickle'
 
  """
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#	train["revenue"] = train["item_cnt_day"] * train["item_price"]
+#6 types of lag features
 
 
 # -----------------           HELPER  FUNCTIONS       -------------------------
@@ -67,16 +63,7 @@ def create_all_basic_item_lags(main_data):
 	lags_10   = [1,2,3,4,5,6,7,8,9,10]
 	lags_1    = [1]
 
-	# LAG ON ITEM COUNT
-	main_data = add_lag_feature(main_data, lags_10, main_cols, item_cnt_feature ) 
-	# LAG ON ITEMS AVERAGE COUNT	
-	main_data = create_lag_features_from_aggregations(main_data, main_cols, group_by_date, aggregation_mean_dict, avg_item_feature, lags_1)
-	# LAG ON Specific ITEM AVERAGE COUNT
-	main_data = create_lag_features_from_aggregations(main_data, main_cols, group_by_date_item,aggregation_mean_dict,avg_spec_item_feature,lags_10)
-	# LAG on sales of any items per SHOP
-	main_data = create_lag_features_from_aggregations(main_data, main_cols, group_by_date_shop,aggregation_mean_dict,avg_shop_sell_feature,lags_10)
-	# LAG on sales of SPEC items per SHOP
-	main_data = create_lag_features_from_aggregations(main_data, main_cols, group_by_date_shop_item,aggregation_mean_dict,avg_spec_item_shop_feature,lags_10)
+
 	return main_data 
 
 def main():

@@ -58,9 +58,11 @@ NLP data for the Future Sales Predictions
 
 ----------------------------------------------------------------
 
-SCRIPT: feature_eng_1.py
+SCRIPT: feature_eng_0.py
 
-Feature Engineering Part 1 Basics
+Feature Engineering Part 0 Basics - very basic adds additional categoriacal features
+Examples: "shop_category_id", "shop_location_id","item_broader_category_name_id",
+		  "item_name_p2", item_name_p3"
 
 	FILES IN: 
 		'items_preprocessed.pickle'
@@ -73,3 +75,60 @@ Feature Engineering Part 1 Basics
 		'items_feature_eng_1.pickle'
 
 
+-------------------------------------------------------------------
+SCRIPT: feature_eng_1.py
+
+!! IMPORTANT STEP!! Puts the training data in expanded dataframe
+For each time block we identify all items that were sold in that month,
+every shop that register a sale in that time block,
+and create a row for every combination of item and shop.
+This script adds 34 time_block to test and train data as well as
+calculates monthly sales for each item, store, timeblock. The feature is used later
+to create many of hte lag features.
+Example:
+If in Jan2013 item1 was sold in shopA,
+              item2 was sold in shopB,
+              item1 was sold in shopC
+Then we get:
+
+jan2013 item1 shopA
+jan2013 item1 shopB
+jan2013 item1 shopC
+jan2013 item2 shopA
+jan2013 item2 shopB
+jan2013 item2 shopC
+
+Cartesian product of the exisitng options in a given month.
+
+	FILES IN: 
+		'items_preprocessed.pickle'
+		'categories_preprocessed.pickle'
+		'shops_preprocessed.pickle'
+		'sales_train_preprocessed.pickle'
+		'test_preprocessed.pickle'
+
+	FILES OUT: 
+		'main_data_feature_eng_1.pickle'
+		'test_data_feature_eng_1.pickle'
+
+
+
+------------------------------------------------------------------------
+
+SCRIPT: feature_eng_2.py
+Creates 5 basic lag features for the data:
+LAG ON ITEM COUNT                     "item_cnt_month"
+LAG ON ITEMS AVERAGE COUNT            "date_avg_item_cnt"	
+LAG ON Specific ITEM AVERAGE COUNT    "date_item_avg_item_cnt"
+LAG on sales of any items per SHOP    "date_shop_avg_item_cnt"
+LAG on sales of SPEC items per SHOP   "date_shop_item_avg_item_cnt"
+
+	
+	FILES IN: 
+		'main_data_feature_eng_1.pickle'
+
+	FILES OUT: 
+		'main_data_feature_eng_2.pickle'
+
+
+--------------------------------------------------------------------------
