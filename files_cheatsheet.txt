@@ -70,9 +70,9 @@ Examples: "shop_category_id", "shop_location_id","item_broader_category_name_id"
 		'categories_preprocessed.pickle'
 
 	FILES OUT: 
-		'shops_feature_eng_1.pickle',
-		'categories_feature_eng_1.pickle',
-		'items_feature_eng_1.pickle'
+		'shops_feature_eng_0.pickle',
+		'categories_feature_eng_0.pickle',
+		'items_feature_eng_0.pickle'
 
 
 -------------------------------------------------------------------
@@ -116,6 +116,7 @@ Cartesian product of the exisitng options in a given month.
 ------------------------------------------------------------------------
 
 SCRIPT: feature_eng_2.py
+
 Creates 5 basic lag features for the data:
 LAG ON ITEM COUNT                     "item_cnt_month"
 LAG ON ITEMS AVERAGE COUNT            "date_avg_item_cnt"	
@@ -132,3 +133,23 @@ LAG on sales of SPEC items per SHOP   "date_shop_item_avg_item_cnt"
 
 
 --------------------------------------------------------------------------
+
+SCRIPT: feature_eng_3.py
+
+Creates 3 broader category and shop location focused lag features for the data:
+LAG on sales of broader category sales per SHOP              'date_item_city_avg_item_cnt' 
+LAG on sales of by month per SHOP location (city)            'date_city_avg_item_cnt'	
+LAG on sales of each item by month per SHOP location (city)  'date_shop_subtype_avg_item_cnt'
+
+Adds 2 first sale focused features
+	"item_shop_first_sale"
+	"item_first_sale"
+
+
+	FILES IN: 
+		'main_data_feature_eng_1.pickle'
+		'categories_preprocessed_0.pickle'
+		'shops_preprocessed_0.pickle'
+
+	FILES OUT: 
+		'main_data_feature_eng_3.pickle'
