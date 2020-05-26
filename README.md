@@ -1,4 +1,4 @@
 # Predict Future Sales Workflow
 
 
-![](img/workflow_draft.png)
+![](img/xgboost_graph.png)

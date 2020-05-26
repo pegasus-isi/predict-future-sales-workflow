@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
-
+from IPython import embed
 """
 Preprocesses data for the Future Sales Predictions
 
@@ -108,6 +108,7 @@ def main():
     shops          = preprocess_shops(shops)
     categories     = preprocess_categories(categories, categories_ids_drop)
     items          = preprocess_items(items, categories_ids_drop)
+
 
 
     pickle.dump(testset, open('test_preprocessed.pickle', 'wb'), protocol = 4)

@@ -9,6 +9,7 @@ from IPython import embed
 		'main_data_feature_eng_1.pickle'
 		'categories_preprocessed_0.pickle'
 		'shops_preprocessed_0.pickle'
+		'items_preprocessed_0.pickle'
 
 	FILES OUT: 
 		'main_data_feature_eng_3.pickle'
@@ -37,6 +38,8 @@ def create_lag_features_from_aggregations(df,main_cols,group_by_date,aggregation
     
     return df
 
+
+# this function may be transfer to other file somewhere later in the process, not crutial to be here
 def create_first_sale_features(main_data):
 
 	main_data["month"] = main_data["date_block_num"] % 12
@@ -46,14 +49,16 @@ def create_first_sale_features(main_data):
 
 	return main_data	
 
-def create_all_cat_shop_item_lags(main_data, categories,shops):
+def create_all_cat_shop_item_lags(main_data, categories,shops,items):
 
 	aggregation_mean_dict   = {"item_cnt_month" : ["mean"] }
 	main_cols               = ["date_block_num", "shop_id","item_id"]
+	items.drop(columns=["item_name_p2_id", "item_name_p3_id"], inplace = True)
+	main_data = pd.merge(main_data, items, on=[ 'item_id'], how='left')
 	main_data = pd.merge(main_data, categories, on=[ 'item_category_id'], how='left')
 	main_data = pd.merge(main_data, shops, on=[ 'shop_id'], how ='left')
 	
-	group_by_date_shop_broad_cat   = ['date_block_num', 'shop_id', 'item_broader_category_name_id']
+	group_by_date_shop_broad_cat   = ['date_block_num', 'shop_id', 'item_broader_category_id']
 	group_by_date_shop_type        = ['date_block_num', 'shop_location_id']
 	group_by_date_item_shop_type   = ['date_block_num','item_id', 'shop_location_id']
 
@@ -79,9 +84,9 @@ def main():
 	train      = pd.read_pickle('main_data_feature_eng_1.pickle')
 	categories = pd.read_pickle('categories_preprocessed_0.pickle')
 	shops      = pd.read_pickle('shops_preprocessed_0.pickle')
-	
+	items      = pd.read_pickle('items_preprocessed_0.pickle')
 
-	main_data  = create_all_cat_shop_item_lags(train, categories, shops)
+	main_data  = create_all_cat_shop_item_lags(train, categories, shops,items)
 	main_data  = create_first_sale_features(main_data)
 	pickle.dump(main_data, open('main_data_feature_eng_3.pickle', 'wb'), protocol = 4)
 

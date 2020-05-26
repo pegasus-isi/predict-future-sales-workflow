@@ -4,7 +4,7 @@ import re
 import pickle
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
-
+from IPython import embed
 """
 Feature Engineering Part 1 Basics
 
@@ -14,9 +14,9 @@ Feature Engineering Part 1 Basics
 		'categories_preprocessed.pickle'
 
 	FILES OUT: 
-		'shops_preprocessed_0.pickle',
-		'categories_preprocessed_0.pickle',
-		'items_preprocessed_0.pickle'
+		'shops_preprocessed_1.pickle',
+		'categories_preprocessed_1.pickle',
+		'items_preprocessed_1.pickle'
 
  """
 
@@ -40,22 +40,22 @@ def feature_eng_shops(shops):
 
 #Index(['item_category_id', 'item_broader_category_name_id','item_broader_category_name'],dtype='object')
 def feature_eng_categories(categories):
-	categories["type_code"] = categories.item_category_name.apply( lambda x: x.split(" ")[0] ).astype(str)
-	
-	category = []
-	for cat in categories.type_code.unique():
-		if len(categories[categories.type_code == cat]) > 4: 
-			category.append( cat )
+    categories["item_general_category_id"] = categories.item_category_name.apply( lambda x: x.split(" ")[0] ).astype(str)
 
-	categories.type_code       = categories.type_code.apply(lambda x: x if (x in category) else "etc")
-	categories.type_code       = LabelEncoder().fit_transform(categories.type_code)
-	categories["split"]        = categories.item_category_name.apply(lambda x: x.split("-"))
-	categories["item_broader_category_name"]     = categories.split.apply(lambda x: x[1].strip() if len(x) > 1 else x[0].strip())
-	categories["item_broader_category_name_id"]  = LabelEncoder().fit_transform( categories["item_broader_category_name"] )
-	
-	categories = categories[["item_category_id", "item_broader_category_name_id"]]
-	
-	return categories
+    category = []
+    for cat in categories.item_general_category_id.unique():
+    	if len(categories[categories.item_general_category_id == cat]) > 4: 
+    		category.append( cat )
+
+    categories.item_general_category_id       = categories.item_general_category_id.apply(lambda x: x if (x in category) else "etc")
+    categories.item_general_category_id       = LabelEncoder().fit_transform(categories.item_general_category_id)
+    categories["split"]        = categories.item_category_name.apply(lambda x: x.split("-"))
+    categories["item_broader_category_name"]     = categories.split.apply(lambda x: x[1].strip() if len(x) > 1 else x[0].strip())
+    categories["item_broader_category_id"]  = LabelEncoder().fit_transform( categories["item_broader_category_name"] )
+
+    categories = categories[["item_category_id", "item_broader_category_id","item_general_category_id"]]
+
+    return categories
 
 
 
@@ -116,15 +116,9 @@ def main():
     categories       = feature_eng_categories(categories)
     items            = feature_eng_items(items)
 
-
     pickle.dump(categories, open('categories_preprocessed_0.pickle', 'wb'), protocol = 4)
     pickle.dump(shops, open('shops_preprocessed_0.pickle', 'wb'), protocol = 4)
     pickle.dump(items, open('items_preprocessed_0.pickle', 'wb'), protocol = 4)
-
-
-
-
-
 
 
 
