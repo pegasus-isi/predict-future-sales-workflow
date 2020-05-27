@@ -206,14 +206,15 @@ Cartesian product of the exisitng options in a given month.
 #############################
 
 MAIN TRAINING DATA 'main_data_feature_eng_1.pickle'
-RangeIndex: 10925650 entries, 0 to 10925649
-Data columns (total 4 columns):
- #   Column          Dtype  
----  ------          -----  
- 0   date_block_num  int16  
- 1   shop_id         int64  
- 2   item_id         int64  
- 3   item_cnt_month  float16
+Int64Index: 10925650 entries, 0 to 10925649
+Data columns (total 5 columns):
+ #   Column            Dtype  
+---  ------            -----  
+ 0   date_block_num    int16  
+ 1   shop_id           int64  
+ 2   item_id           int64  
+ 3   item_cnt_month    float16
+ 4   item_category_id  float64
 
 
 
