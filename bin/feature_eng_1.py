@@ -24,7 +24,7 @@ from IPython import embed
 
 '''
 Extends the training dataframe by adding entries for sales for each month 
-of every item an shop combination. 
+of every item and shop combination. 
 '''
 def dataframe_setup(train,cols):
 
@@ -38,10 +38,12 @@ def dataframe_setup(train,cols):
 
     return data_matrix
 
-def add_date_block(test, data):
+
+def add_date_block(test):
     test["date_block_num"] = 34
     test["date_block_num"] = test["date_block_num"].astype(np.int8)
-    return test, data
+    
+    return test
 
 
 def monthly_sales_count(train, data,cols):
@@ -50,8 +52,10 @@ def monthly_sales_count(train, data,cols):
     group.reset_index( inplace = True)
     data = pd.merge( data, group, on = cols, how = "left" )
     data["item_cnt_month"] = data["item_cnt_month"].fillna(0).clip(0,20).astype(np.float16)
-
+    
     return data
+
+
 '''
 Creates final version of the main dataframe (in terms of rows)
 to which later features (columns) are added 
@@ -65,6 +69,7 @@ def merge_dataframes(data, test,cols,categories, items):
 
     return data
 
+
 def main():
     items      = pd.read_pickle('items_preprocessed.pickle')
     categories = pd.read_pickle('categories_preprocessed.pickle')
@@ -74,7 +79,7 @@ def main():
     cols            = ["date_block_num", "shop_id", "item_id"]
     main_data       = dataframe_setup(train, cols)
     main_data       = monthly_sales_count(train, main_data,cols)
-    test, main_data = add_date_block(test,main_data)
+    test            = add_date_block(test)
     main_data       = merge_dataframes(main_data, test, cols,categories,items)
     pickle.dump(main_data, open('main_data_feature_eng_1.pickle', 'wb'), protocol = 4)
 
