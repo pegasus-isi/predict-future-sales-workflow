@@ -65,7 +65,7 @@ def create_all_cat_shop_item_lags(main_data, categories,shops,items):
 
 	avg_item_shop_location_item_feature = [ 'date_item_city_avg_item_cnt' ]
 	avg_item_shop_location_feature = ['date_city_avg_item_cnt']	
-	avg_item_broad_cat_feature     = ['date_shop_subtype_avg_item_cnt']
+	avg_item_broad_cat_feature     = ['date_shop_broad_avg_item_cnt']
 	
 	lags_10   = [1,2,3,4,5,6,7,8,9,10]
 	lags_1    = [1]

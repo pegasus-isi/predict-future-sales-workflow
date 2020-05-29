@@ -140,8 +140,8 @@ Data columns (total 3 columns):
  #   Column                    Non-Null Count  Dtype
 ---  ------                    --------------  -----
  0   item_category_id          80 non-null     int64
- 1   item_broader_category_id  80 non-null     int64
- 2   item_general_category_id  80 non-null     int64
+ 1   item_broader_category_id  80 non-null     int64 (formarly subtype_code)
+ 2   item_general_category_id  80 non-null     int64 (formarly type_code)
 
 ITEMS 'items_feature_eng_0.pickle'
 Int64Index: 22166 entries, 0 to 22169
@@ -332,7 +332,7 @@ Data columns (total 22 columns):
  6   item_general_category_id              float64
  7   shop_category_id                      int64  
  8   shop_location_id                      int64  
- 9   date_shop_subtype_avg_item_cnt_lag_1  float16
+ 9   date_shop_broad_avg_item_cnt_lag_1  float16
  10  date_city_avg_item_cnt_lag_1          float16
  11  date_item_city_avg_item_cnt_lag_1     float16
  12  month_shopcat_item_cnt_mean_lag_1     float16
