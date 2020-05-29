@@ -16,7 +16,6 @@ from IPython import embed
 
 	FILES OUT: 
 		'main_data_feature_eng_1.pickle'
-		'test_data_feature_eng_1.pickle'
 
 
  """
@@ -77,9 +76,7 @@ def main():
     main_data       = monthly_sales_count(train, main_data,cols)
     test, main_data = add_date_block(test,main_data)
     main_data       = merge_dataframes(main_data, test, cols,categories,items)
-
     pickle.dump(main_data, open('main_data_feature_eng_1.pickle', 'wb'), protocol = 4)
-    pickle.dump(test, open('test_data_feature_eng_1.pickle', 'wb'), protocol = 4)
 
 
 if __name__ == "__main__":

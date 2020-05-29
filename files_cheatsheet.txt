@@ -197,7 +197,6 @@ Cartesian product of the exisitng options in a given month.
 
 	FILES OUT: 
 		'main_data_feature_eng_1.pickle'
-		'test_data_feature_eng_1.pickle'
 
 
 
@@ -215,18 +214,8 @@ Data columns (total 5 columns):
  2   item_id           int64  
  3   item_cnt_month    float16
  4   item_category_id  float64
-
-
-
-TEST DATA 'test_data_feature_eng_1.pickle'
-RangeIndex: 214200 entries, 0 to 214199
-Data columns (total 4 columns):
- #   Column          Non-Null Count   Dtype
----  ------          --------------   -----
- 0   ID              214200 non-null  int64
- 1   shop_id         214200 non-null  int64
- 2   item_id         214200 non-null  int64
- 3   date_block_num  214200 non-null  int8 
+dtypes: float16(1), float64(1), int16(1), int64(2)
+memory usage: 375.1 MB
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -331,7 +320,7 @@ Adds 2 first sale focused features
 
 MAIN TRAIN DATA 	'main_data_feature_eng_3.pickle'
 Int64Index: 10925650 entries, 0 to 10925649
-Data columns (total 15 columns):
+Data columns (total 22 columns):
  #   Column                                Dtype  
 ---  ------                                -----  
  0   date_block_num                        int16  
@@ -346,8 +335,18 @@ Data columns (total 15 columns):
  9   date_shop_subtype_avg_item_cnt_lag_1  float16
  10  date_city_avg_item_cnt_lag_1          float16
  11  date_item_city_avg_item_cnt_lag_1     float16
- 12  month                                 int16  
- 13  item_shop_first_sale                  int16  
- 14  item_first_sale                       int16  
+ 12  month_shopcat_item_cnt_mean_lag_1     float16
+ 13  month_shopcat_cnt_mean_lag_1          float16
+ 14  month_shop_cat_cnt_mean_lag_1         float16
+ 15  month_shop_shopcat_cnt_mean_lag_1     float16
+ 16  month_cat_cnt_mean_lag_1              float16
+ 17  month_broad_itemcat_cnt_mean_lag_1    float16
+ 18  month_type_cnt_mean_lag_1             float16
+ 19  month                                 int16  
+ 20  item_shop_first_sale                  int16  
+ 21  item_first_sale                       int16  
+dtypes: float16(11), float64(3), int16(4), int64(4)
+memory usage: 979.4 MB
+
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
