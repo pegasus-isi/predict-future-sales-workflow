@@ -71,17 +71,17 @@ def merge_dataframes(data, test,cols,categories, items):
 
 
 def main():
-    items      = pd.read_pickle('items_preprocessed.pickle')
-    categories = pd.read_pickle('categories_preprocessed.pickle')
-    train      = pd.read_pickle('sales_train_preprocessed.pickle')
-    test       = pd.read_pickle('test_preprocessed.pickle')
+    items      = pd.read_pickle("items_preprocessed.pickle")
+    categories = pd.read_pickle("categories_preprocessed.pickle")
+    train      = pd.read_pickle("sales_train_preprocessed.pickle")
+    test       = pd.read_pickle("test_preprocessed.pickle")
     
     cols            = ["date_block_num", "shop_id", "item_id"]
     main_data       = dataframe_setup(train, cols)
     main_data       = monthly_sales_count(train, main_data,cols)
     test            = add_date_block(test)
     main_data       = merge_dataframes(main_data, test, cols,categories,items)
-    pickle.dump(main_data, open('main_data_feature_eng_1.pickle', 'wb'), protocol = 4)
+    pickle.dump(main_data, open("main_data_feature_eng_1.pickle", "wb"), protocol = 4)
 
 
 if __name__ == "__main__":
