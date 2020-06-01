@@ -118,6 +118,7 @@ def create_opening_relase_related_features(matrix,train):
 
     matrix['item_never_sold_in_shop_before_but_not_new']=((1-matrix['item_new'])*matrix['item_never_sold_in_shop_before']).astype(bool)
     matrix['item_seniority']=(2-matrix['item_new'].astype(int)-matrix['item_never_sold_in_shop_before'].astype(int)).astype(np.int8)
+    matrix['item_sold_in_shop']=(matrix['item_cnt_month']>0)
     return matrix
 
 def main():

@@ -365,9 +365,7 @@ Adds 2 first sale focused features
 
 	FILES IN: 
 		'main_data_feature_eng_1.pickle'
-		'categories_preprocessed_0.pickle'
-		'shops_preprocessed_0.pickle'
-		'items_preprocessed_0.pickle'
+		'holidays.csv'
 
 	FILES OUT: 
 		'main_data_feature_eng_4.pickle'
@@ -378,7 +376,7 @@ Adds 2 first sale focused features
 #############################
 
 Int64Index: 10925650 entries, 0 to 10925649
-Data columns (total 26 columns):
+Data columns (total 27 columns):
  #   Column                                      Dtype  
 ---  ------                                      -----  
  0   date_block_num                              int16  
@@ -405,8 +403,12 @@ Data columns (total 26 columns):
  21  item_never_sold_in_shop_before              bool   
  22  item_never_sold_in_shop_before_but_not_new  bool   
  23  item_seniority                              int8   
- 24  item_month_id_of_last_sale_in_shop          float64
- 25  item_months_since_last_sale_in_shop         float64
+ 24  item_sold_in_shop                           bool   
+ 25  item_month_id_of_last_sale_in_shop          float64
+ 26  item_months_since_last_sale_in_shop         float64
+dtypes: bool(5), float16(1), float64(7), int16(11), int64(2), int8(1)
+memory usage: 1.1 GB
+
 
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
