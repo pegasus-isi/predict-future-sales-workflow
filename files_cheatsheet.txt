@@ -350,3 +350,108 @@ memory usage: 979.4 MB
 
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
+
+SCRIPT: feature_eng_4.py
+
+Creates 3 broader category and shop location focused lag features for the data:
+LAG on sales of broader category sales per SHOP              'date_item_city_avg_item_cnt' 
+LAG on sales of by month per SHOP location (city)            'date_city_avg_item_cnt'	
+LAG on sales of each item by month per SHOP location (city)  'date_shop_subtype_avg_item_cnt'
+
+Adds 2 first sale focused features
+	"item_shop_first_sale"
+	"item_first_sale"
+
+
+	FILES IN: 
+		'main_data_feature_eng_1.pickle'
+		'categories_preprocessed_0.pickle'
+		'shops_preprocessed_0.pickle'
+		'items_preprocessed_0.pickle'
+
+	FILES OUT: 
+		'main_data_feature_eng_4.pickle'
+
+
+#############################
+#    DETAILS ABOUT OUTPUTS  #
+#############################
+
+Int64Index: 10925650 entries, 0 to 10925649
+Data columns (total 26 columns):
+ #   Column                                      Dtype  
+---  ------                                      -----  
+ 0   date_block_num                              int16  
+ 1   shop_id                                     int64  
+ 2   item_id                                     int64  
+ 3   item_cnt_month                              float16
+ 4   item_category_id                            float64
+ 5   holidays_cnt_month                          float64
+ 6   holidays_cnt_month_fut_1                    float64
+ 7   holidays_cnt_month_fut_2                    float64
+ 8   holidays_cnt_month_fut_3                    float64
+ 9   month                                       int16  
+ 10  item_shop_first_sale                        int16  
+ 11  item_first_sale                             int16  
+ 12  shop_months_since_opening                   int16  
+ 13  shop_opening                                bool   
+ 14  item_month_id_of_release                    int16  
+ 15  item_month_of_release                       int16  
+ 16  item_months_since_release                   int16  
+ 17  item_new                                    bool   
+ 18  item_month_id_of_first_sale_in_shop         int16  
+ 19  item_month_of_first_sale_in_shop            int16  
+ 20  item_months_since_first_sale_in_shop        int16  
+ 21  item_never_sold_in_shop_before              bool   
+ 22  item_never_sold_in_shop_before_but_not_new  bool   
+ 23  item_seniority                              int8   
+ 24  item_month_id_of_last_sale_in_shop          float64
+ 25  item_months_since_last_sale_in_shop         float64
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+SCRIPT: feature_eng_5.py
+
+Creates 3 broader category and shop location focused lag features for the data:
+LAG on sales of broader category sales per SHOP              'date_item_city_avg_item_cnt' 
+LAG on sales of by month per SHOP location (city)            'date_city_avg_item_cnt'	
+LAG on sales of each item by month per SHOP location (city)  'date_shop_subtype_avg_item_cnt'
+
+Adds 2 first sale focused features
+	"item_shop_first_sale"
+	"item_first_sale"
+
+
+	FILES IN: 
+		'main_data_feature_eng_1.pickle'
+		'categories_preprocessed_0.pickle'
+		'shops_preprocessed_0.pickle'
+		'items_preprocessed_0.pickle'
+
+	FILES OUT: 
+		'main_data_feature_eng_5.pickle'
+
+
+#############################
+#    DETAILS ABOUT OUTPUTS  #
+#############################
+
+Int64Index: 10925650 entries, 0 to 10925649
+Data columns (total 8 columns):
+
+ #   Column                Dtype  
+---  ------                -----  
+ 0   date_block_num        int16  
+ 1   shop_id               int64  
+ 2   item_id               int64  
+ 3   item_cnt_month        float16
+ 4   item_category_id      float64
+ 5   delta_price_lag       float64
+ 6   delta_shop_price_lag  float64
+ 7   delta_revenue_lag_1   float64
+dtypes: float16(1), float64(4), int16(1), int64(2)
+memory usage: 625.2 MB
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
