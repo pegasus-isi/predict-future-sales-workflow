@@ -38,16 +38,6 @@ def create_lag_features_from_aggregations(df, main_cols, group_by_date, aggregat
     return df
 
 
-# this function may be transfer to other file somewhere later in the process, not crutial to be here
-def create_first_sale_features(main_data):
-    main_data["month"] = main_data["date_block_num"] % 12
-    days = pd.Series([31,28,31,30,31,30,31,31,30,31,30,31])
-    main_data["item_shop_first_sale"]= main_data["date_block_num"] - main_data.groupby(["item_id", "shop_id"])["date_block_num"].transform("min")
-    main_data["item_first_sale"]     = main_data["date_block_num"] - main_data.groupby(["item_id"])["date_block_num"].transform("min")
-
-    return main_data	
-
-
 def create_all_cat_shop_item_lags(main_data, categories, shops, items):
     aggregation_mean_dict   = {"item_cnt_month" : ["mean"]}
     main_cols               = ["date_block_num", "shop_id", "item_id"]
@@ -152,7 +142,7 @@ def main():
 
 	main_data  = create_all_cat_shop_item_lags(train, categories, shops,items)
 	main_data  = create_all_mean_lags(main_data)
-	main_data  = create_first_sale_features(main_data)
+
 	pickle.dump(main_data, open("main_data_feature_eng_3.pickle", "wb"), protocol = 4)
 
 

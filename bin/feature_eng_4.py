@@ -35,6 +35,15 @@ def create_holiday_lag_features(holidays, lags):
     return holidays
 
 
+def create_first_sale_features(main_data):
+    main_data["month"] = main_data["date_block_num"] % 12
+    days = pd.Series([31,28,31,30,31,30,31,31,30,31,30,31])
+    main_data["item_shop_first_sale"]= main_data["date_block_num"] - main_data.groupby(["item_id", "shop_id"])["date_block_num"].transform("min")
+    main_data["item_first_sale"]     = main_data["date_block_num"] - main_data.groupby(["item_id"])["date_block_num"].transform("min")
+
+    return main_data    
+
+
 def create_all_holiday_features(train, holidays):
     lags_3              = [1,2,3]
     holidays_by_month   = group_holidays_by_month(holidays)
@@ -50,6 +59,7 @@ def main():
     holidays    = pd.read_csv("holidays.csv")
     train       = pd.read_pickle("main_data_feature_eng_1.pickle")
     main_data   = create_holiday_lags(train, holidays)
+    main_data   = create_first_sale_features(main_data)
     pickle.dump(main_data, open("main_data_feature_eng_4.pickle", "wb"), protocol = 4)
 
 
