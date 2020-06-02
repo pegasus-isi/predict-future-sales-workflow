@@ -27,6 +27,7 @@ def add_lag_feature(df, lags, main_cols, cols):
             df = pd.merge(df, shifted, on=main_cols, how="left")
     return df
 
+
 def create_lag_features_from_aggregations(df, main_cols, group_by_date, aggregation_op_dict, result_feature, lags):
     group = df.groupby( group_by_date).agg(aggregation_op_dict )
     group.columns = result_feature
@@ -143,7 +144,7 @@ def main():
 	main_data  = create_all_cat_shop_item_lags(train, categories, shops,items)
 	main_data  = create_all_mean_lags(main_data)
 
-	pickle.dump(main_data, open("main_data_feature_eng_3.pickle", "wb"), protocol = 4)
+	pickle.dump(main_data, open("main_data_feature_eng_3.pickle", "wb"), protocol=4)
 
 
 if __name__ == "__main__":

@@ -29,20 +29,20 @@ def add_lag_feature(df, lags, main_cols, cols):
         tmp = df[current_cols]
         for i in lags:
             shifted = tmp.copy()
-            shifted.columns = main_cols + [ col + "_lag_"+str(i)]
+            shifted.columns = main_cols + [col + "_lag_"+str(i)]
             shifted.date_block_num = shifted.date_block_num + i
-            df = pd.merge(df, shifted, on=main_cols, how ="left")
+            df = pd.merge(df, shifted, on=main_cols, how="left")
     
     return df
 
 
 def create_lag_features_from_aggregations(df, main_cols, group_by_date, aggregation_op_dict, result_feature, lags):
-    group = df.groupby( group_by_date).agg(aggregation_op_dict )
+    group = df.groupby(group_by_date).agg(aggregation_op_dict)
     group.columns = result_feature
-    group.reset_index(inplace = True)
-    df = pd.merge(df, group, on = group_by_date, how = "left")
-    df = add_lag_feature( df, lags, main_cols, result_feature )
-    df.drop( result_feature, axis = 1, inplace = True )
+    group.reset_index(inplace=True)
+    df = pd.merge(df, group, on=group_by_date, how="left")
+    df = add_lag_feature(df, lags, main_cols, result_feature)
+    df.drop(result_feature, axis=1, inplace=True)
     
     return df
 
@@ -83,7 +83,7 @@ def create_all_basic_item_lags(main_data):
 def main():
 	train      = pd.read_pickle("main_data_feature_eng_1.pickle")
 	main_data  = create_all_basic_item_lags(train)
-	pickle.dump(main_data, open("main_data_feature_eng_2.pickle", "wb"), protocol = 4)
+	pickle.dump(main_data, open("main_data_feature_eng_2.pickle", "wb"), protocol=4)
 
 
 if __name__ == "__main__":
