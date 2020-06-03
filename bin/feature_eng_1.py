@@ -6,8 +6,6 @@ import pandas as pd
 from itertools import product
 
 """
-
-
 	FILES IN: 
 		'items_preprocessed.pickle'
 		'categories_preprocessed.pickle'
