@@ -62,7 +62,7 @@ def main():
     #save output
     pickle.dump(train_group_0, open("train_group_0.pickle", "wb"), protocol=4)
     pickle.dump(train_group_1, open("train_group_1.pickle", "wb"), protocol=4)
-    pickle.dump(train_group_2, open("trian_group_2.pickle", "wb"), protocol=4)
+    pickle.dump(train_group_2, open("train_group_2.pickle", "wb"), protocol=4)
     pickle.dump(main_data_merged, open("main_data_feature_eng_all.pickle", "wb"), protocol=4)
 
 
