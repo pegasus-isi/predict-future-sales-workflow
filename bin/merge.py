@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import pandas as pd
+import gc
 import pickle
+import pandas as pd
 
 """
 	FILES IN: 
@@ -37,19 +38,26 @@ def get_train_2(data):
 
 
 def main():
-    tenNN_items    = pd.read_pickle("tenNN_items.pickle")
-    threeNN_shops  = pd.read_pickle("threeNN_shops.pickle")
+    gc.enable()
+    #tenNN_items    = pd.read_pickle("tenNN_items.pickle")
+    #threeNN_shops  = pd.read_pickle("threeNN_shops.pickle")
     
     main_data_2    = pd.read_pickle("main_data_feature_eng_2.pickle")
     main_data_3    = pd.read_pickle("main_data_feature_eng_3.pickle")
     main_data_4    = pd.read_pickle("main_data_feature_eng_4.pickle")
     main_data_5    = pd.read_pickle("main_data_feature_eng_5.pickle")
-
+    
     #merge all dataframes with features to one dataframe
     cols = ["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"]
     main_data_merged = merge_dataframes(main_data_2, main_data_3, cols)
+    main_data_2 = None
+    main_data_3 = None
+    
     main_data_merged = merge_dataframes(main_data_merged, main_data_4, cols)
+    main_data_4 = None
+    
     main_data_merged = merge_dataframes(main_data_merged, main_data_5, cols)
+    main_data_5 = None
 
     #main_data_merged = merge_dataframes(main_data_merged, tenNN_items, ["item_id"])
     #main_data_merged = merge_dataframes(main_data_merged, threeNN_shops, ["shop_id"])
