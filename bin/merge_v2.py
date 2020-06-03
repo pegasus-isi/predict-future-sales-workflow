@@ -20,7 +20,7 @@ import pandas as pd
  """
 
 
-def merge_all_features_and_output(data, cols):
+def merge_dataframes(data, cols):
     extra_data = pd.read_pickle("main_data_feature_eng_2.pickle")
     data = pd.merge(data, extra_data, on=cols, how="left")
     extra_data = pd.read_pickle("main_data_feature_eng_3.pickle")
@@ -57,9 +57,9 @@ def main():
 
     #merge all features for all seniorities
     cols = ["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"]
-    train_group_0 = merge_all_features_and_output(train_group_0, cols)
-    train_group_1 = merge_all_features_and_output(train_group_1, cols)
-    train_group_2 = merge_all_features_and_output(train_group_2, cols)
+    train_group_0 = merge_dataframes(train_group_0, cols)
+    train_group_1 = merge_dataframes(train_group_1, cols)
+    train_group_2 = merge_dataframes(train_group_2, cols)
     
     #save output
     pickle.dump(train_group_0, open("train_group_0.pickle", "wb"), protocol=4)
