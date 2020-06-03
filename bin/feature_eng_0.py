@@ -1,10 +1,10 @@
-import pandas as pd
-import numpy as np
+#!/usr/bin/env python3
+
 import re
 import pickle
-import seaborn as sns
+import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-from IPython import embed
+
 """
 Feature Engineering Part 1 Basics
 

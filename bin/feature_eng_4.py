@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import pandas as pd
+
 import pickle
 import numpy as np
-from IPython import embed
+import pandas as pd
+
 """
 Creates holiday features with 3 lags from future months.
 	

@@ -1,8 +1,9 @@
-import pandas as pd
-import numpy as np
+#!/usr/bin/env python3
+
 import pickle
+import numpy as np
+import pandas as pd
 from itertools import product
-from IPython import embed
 
 """
 

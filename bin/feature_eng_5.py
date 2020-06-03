@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
-import pickle
+#!/usr/bin/env python3
 
-from IPython import embed
+import pickle
+import pandas as pd
+
 """
 
 	FILES IN: 

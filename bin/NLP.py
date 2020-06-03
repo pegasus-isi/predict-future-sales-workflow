@@ -1,16 +1,12 @@
-import pandas as pd
-import numpy as np
-import string
-import pickle
-import os
-#import plotly.express as px
-import re
-from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
-from sklearn.manifold import TSNE
-from sklearn.neighbors import NearestNeighbors
-from sklearn.cluster import KMeans
-from IPython import embed
+#!/usr/bin/env python3
 
+import re
+import pickle
+import pandas as pd
+from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans
+from sklearn.neighbors import NearestNeighbors
+from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 
 """
 Preprocesses data for the Future Sales Predictions

@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
-import pickle
+#!/usr/bin/env python3
 
-from IPython import embed
+import pickle
+import pandas as pd
+
 """
 Creates 5 basic lag features for the data:
 LAG ON ITEM COUNT                     "item_cnt_month"

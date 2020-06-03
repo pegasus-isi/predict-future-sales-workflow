@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
-import pickle
+#!/usr/bin/env python3
 
-from IPython import embed
+import pickle
+import pandas as pd
+
 """
 
 	FILES IN: 
@@ -40,7 +40,7 @@ def create_lag_features_from_aggregations(df, main_cols, group_by_date, aggregat
 
 
 def create_all_cat_shop_item_lags(main_data, categories, shops, items):
-    aggregation_mean_dict   = {"item_cnt_month" : ["mean"]}
+    aggregation_mean_dict   = {"item_cnt_month": ["mean"]}
     main_cols               = ["date_block_num", "shop_id", "item_id"]
     items.drop(columns=["item_name_p2_id", "item_name_p3_id", "item_category_id"], inplace = True)
     main_data = pd.merge(main_data, items, on=["item_id"], how="left")
@@ -55,7 +55,7 @@ def create_all_cat_shop_item_lags(main_data, categories, shops, items):
     avg_item_shop_location_feature = ["date_city_avg_item_cnt"]	
     avg_item_broad_cat_feature     = ["date_shop_broad_avg_item_cnt"]
 	
-    lags_10   = [1,2,3,4,5,6,7,8,9,10]
+    lags_10   = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     lags_1    = [1]
 
     # LAG on sales of broader category sales per SHOP
