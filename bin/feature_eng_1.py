@@ -9,7 +9,6 @@ from itertools import product
 	FILES IN: 
 		'items_preprocessed.pickle'
 		'categories_preprocessed.pickle'
-		'shops_preprocessed.pickle'
 		'sales_train_preprocessed.pickle'
 		'test_preprocessed.pickle'
 

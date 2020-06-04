@@ -193,7 +193,7 @@ items_feature_eng_0 = File("items_feature_eng_0.pickle")
 shops_feature_eng_0 = File("shops_feature_eng_0.pickle")
 categories_feature_eng_0 = File("categories_feature_eng_0.pickle")
 
-feature_eng_0_job = Job(feature_eng_0)\
+feature_eng_0_job = Job(feature_eng_0, _id="eng_0")\
                         .add_inputs(items_preprocessed, shops_preprocessed, categories_preprocessed)\
                         .add_outputs(items_feature_eng_0, shops_feature_eng_0, categories_feature_eng_0)
 
@@ -201,7 +201,7 @@ feature_eng_0_job = Job(feature_eng_0)\
 main_data_feature_eng_1 = File("main_data_feature_eng_1.pickle")
 
 feature_eng_1_job = Job(feature_eng_1)\
-                        .add_inputs(items_preprocessed, shops_preprocessed, categories_preprocessed, sales_train_preprocessed, test_preprocessed)\
+                        .add_inputs(items_preprocessed, categories_preprocessed, sales_train_preprocessed, test_preprocessed)\
                         .add_outputs(main_data_feature_eng_1)
 
 # --- Add feature_eng_2 Job -------------------------------------------------------
@@ -222,14 +222,14 @@ feature_eng_3_job = Job(feature_eng_3)\
 main_data_feature_eng_4 = File("main_data_feature_eng_4.pickle")
 
 feature_eng_4_job = Job(feature_eng_4)\
-                        .add_inputs(main_data_feature_eng_1)\
+                        .add_inputs(holidays, main_data_feature_eng_1)\
                         .add_outputs(main_data_feature_eng_4)
 
 # --- Add feature_eng_5 Job -------------------------------------------------------
 main_data_feature_eng_5 = File("main_data_feature_eng_5.pickle")
 
 feature_eng_5_job = Job(feature_eng_5)\
-                        .add_inputs(main_data_feature_eng_1)\
+                        .add_inputs(items_feature_eng_0, shops_feature_eng_0, categories_feature_eng_0, sales_train, main_data_feature_eng_1)\
                         .add_outputs(main_data_feature_eng_5)
 
 # --- Add merge Job ---------------------------------------------------------------

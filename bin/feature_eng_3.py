@@ -6,9 +6,9 @@ import pandas as pd
 """
 	FILES IN: 
 		'main_data_feature_eng_1.pickle'
-		'categories_preprocessed_0.pickle'
-		'shops_preprocessed_0.pickle'
-		'items_preprocessed_0.pickle'
+		'categories_feature_eng_0.pickle'
+		'shops_feature_eng_0.pickle'
+		'items_feature_eng_0.pickle'
 
 	FILES OUT: 
 		'main_data_feature_eng_3.pickle'
@@ -136,11 +136,11 @@ def create_all_mean_lags(main_data):
 
 def main():
 	train      = pd.read_pickle("main_data_feature_eng_1.pickle")
-	categories = pd.read_pickle("categories_preprocessed_0.pickle")
-	shops      = pd.read_pickle("shops_preprocessed_0.pickle")
-	items      = pd.read_pickle("items_preprocessed_0.pickle")
+	categories = pd.read_pickle("categories_feature_eng_0.pickle")
+	shops      = pd.read_pickle("shops_feature_eng_0.pickle")
+	items      = pd.read_pickle("items_feature_eng_0.pickle")
 
-	main_data  = create_all_cat_shop_item_lags(train, categories, shops,items)
+	main_data  = create_all_cat_shop_item_lags(train, categories, shops, items)
 	main_data  = create_all_mean_lags(main_data)
 
 	pickle.dump(main_data, open("main_data_feature_eng_3.pickle", "wb"), protocol=4)

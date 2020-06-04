@@ -116,10 +116,9 @@ def main():
     categories       = feature_eng_categories(categories)
     items            = feature_eng_items(items)
 
-    pickle.dump(categories, open("categories_feature_eng_0.pickle", "wb"), protocol=4)
-    pickle.dump(shops, open("shops_feature_eng_0.pickle", "wb"), protocol=4)
     pickle.dump(items, open("items_feature_eng_0.pickle", "wb"), protocol=4)
-
+    pickle.dump(shops, open("shops_feature_eng_0.pickle", "wb"), protocol=4)
+    pickle.dump(categories, open("categories_feature_eng_0.pickle", "wb"), protocol=4)
 
 
 if __name__ == "__main__":
