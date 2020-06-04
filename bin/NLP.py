@@ -12,7 +12,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 Preprocesses data for the Future Sales Predictions
 
 	FILES IN: 
-		'items.csv',
+		'items_translated.csv',
 		'item_categories.csv',
 		'shops.csv'
 
@@ -110,7 +110,7 @@ def shops_nlp(shops):
 
 def main():
     # Read in the data for the analysis
-    items             = pd.read_csv("items.csv")
+    items             = pd.read_csv("items_translated.csv")
     categories        = pd.read_csv("item_categories.csv")
     shops             = pd.read_csv("shops.csv")
 
