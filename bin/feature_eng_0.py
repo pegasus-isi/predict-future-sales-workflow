@@ -14,9 +14,9 @@ Feature Engineering Part 1 Basics
 		'categories_preprocessed.pickle'
 
 	FILES OUT: 
-		'shops_preprocessed_1.pickle',
-		'categories_preprocessed_1.pickle',
-		'items_preprocessed_1.pickle'
+		'shops_feature_eng_0.pickle',
+		'categories_feature_eng_0.pickle',
+		'items_feature_eng_0.pickle'
 
  """
 
@@ -116,9 +116,9 @@ def main():
     categories       = feature_eng_categories(categories)
     items            = feature_eng_items(items)
 
-    pickle.dump(categories, open("categories_preprocessed_0.pickle", "wb"), protocol=4)
-    pickle.dump(shops, open("shops_preprocessed_0.pickle", "wb"), protocol=4)
-    pickle.dump(items, open("items_preprocessed_0.pickle", "wb"), protocol=4)
+    pickle.dump(categories, open("categories_feature_eng_0.pickle", "wb"), protocol=4)
+    pickle.dump(shops, open("shops_feature_eng_0.pickle", "wb"), protocol=4)
+    pickle.dump(items, open("items_feature_eng_0.pickle", "wb"), protocol=4)
 
 
 

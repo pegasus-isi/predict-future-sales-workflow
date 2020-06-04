@@ -6,9 +6,9 @@ import pandas as pd
 """
 	FILES IN: 
                 'main_data_feature_eng_1.pickle'
-                'categories_preprocessed_0.pickle'
-                'shops_preprocessed_0.pickle'
-                'items_preprocessed_0.pickle'
+                'categories_feature_eng_0.pickle'
+                'shops_feature_eng_0.pickle'
+                'items_feature_eng_0.pickle'
                 'sales_train.csv'
 
 	FILES OUT: 
@@ -129,9 +129,9 @@ def create_all_price_related_lags(main_data, train):
     
 def main():
     main_data  = pd.read_pickle("main_data_feature_eng_1.pickle")
-    items      = pd.read_pickle("items_preprocessed_0.pickle")
-    categories = pd.read_pickle("categories_preprocessed_0.pickle")
-    shops      = pd.read_pickle("shops_preprocessed_0.pickle")
+    items      = pd.read_pickle("items_feature_eng_0.pickle")
+    categories = pd.read_pickle("categories_feature_eng_0.pickle")
+    shops      = pd.read_pickle("shops_feature_eng_0.pickle")
     org_train  = pd.read_csv("sales_train.csv")
 
     main_data = create_all_price_related_lags(main_data, org_train)
