@@ -103,6 +103,7 @@ def main():
     parser.add_argument("-m", "--validation_months", metavar="INT", type=int, default=1, help="Number of trialing months for validation", required=False)
     parser.add_argument("-o", "--output", metavar="STR", type=str, default="best_parameters.json", help="Output file", required=False)
     #TODO: Accept a filter for columns to drop or keep
+    #TODO: Add argument for gpu (with gpu id maybe?)
 
     args = parser.parse_args()
     config = json.load(open(args.conf, 'r'))

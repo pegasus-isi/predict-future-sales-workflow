@@ -76,7 +76,7 @@ def main():
 
     test_group_0 = group_0[group_0.date_block_num == 34]
     test_group_1 = group_1[group_1.date_block_num == 34]
-    ttest_group_2 = group_2[group_2.date_block_num == 34]
+    test_group_2 = group_2[group_2.date_block_num == 34]
     
     #save output
     pickle.dump(train_group_0, open("train_group_0.pickle", "wb"), protocol=4)
