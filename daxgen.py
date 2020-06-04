@@ -175,7 +175,8 @@ threeNN_shops = File("threeNN_shops.pickle")
 items_clusters = File("items_clusters.pickle")
 nlp_job = Job(nlp)\
             .add_inputs(items_translated, item_categories, shops)\
-            .add_outputs(shops_nlp, items_nlp, tenNN_items, threeNN_shops, items_clusters)
+            .add_outputs(shops_nlp, items_nlp, tenNN_items, threeNN_shops, items_clusters)\
+            .add_pegasus_profile(cores="12")
 
 # --- Add Preprocess Job ---------------------------------------------------------
 test_preprocessed = File("test_preprocessed.pickle")
