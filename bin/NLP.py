@@ -37,15 +37,15 @@ e.g. we do not have item_id with id 1, hence need for this mapping between order
 def find_kNN(embedding_vec, num_neighbors, col_names, embedding_cols, col_id):
     nbrs               = NearestNeighbors(n_neighbors=num_neighbors, algorithm="ball_tree").fit(embedding_vec[embedding_cols])
     distances, indices = nbrs.kneighbors(embedding_vec[embedding_cols])
-
+    
     id_map_dict = {}
     for i in range(embedding_vec.shape[0]):
-	id_map_dict[i] = embedding_vec[col_id][i]
+        id_map_dict[i] = embedding_vec[col_id][i]
 
     for i in range(indices.shape[0]):
         for j in range(indices.shape[1]):
-	    index = indices[i][j]
-	    indices[i][j] = id_map_dict[index]
+            index = indices[i][j]
+            indices[i][j] = id_map_dict[index]
 	
     return pd.DataFrame(indices, columns = col_names)
 
@@ -99,7 +99,7 @@ def shops_nlp(shops):
     vectorizer           = CountVectorizer()
     processed_shop_names = []
     for i in range(shops.shape[0]):
-	processed_shop_names.append(clean_text(shops["shop_name"][i]))
+        processed_shop_names.append(clean_text(shops["shop_name"][i]))
     shops["clean_shop_name"] = pd.Series(processed_shop_names)  
     shops_embedded_df = create_embeddings(vectorizer, shops, 2, "clean_shop_name", "shop_id")
     col_names_shops   = ["shop_id", "1NN_shop", "2NN_shop", "3NN_shop"]
