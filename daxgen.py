@@ -165,7 +165,7 @@ wf = Workflow(("predict-sales-workflow-%s" % ts), infer_dependencies=True)
 eda_output = File("EDA.pdf")
 eda_job = Job(eda)\
             .add_inputs(items, item_categories, shops, sales_train)\
-            .add_outputs(eda_output)
+            .add_outputs(eda_output, stage_out=True, register_replica=True)
 
 # --- Add NLP Job ----------------------------------------------------------------
 shops_nlp = File("shops_nlp.pickle")
@@ -175,7 +175,7 @@ threeNN_shops = File("threeNN_shops.pickle")
 items_clusters = File("items_clusters.pickle")
 nlp_job = Job(nlp)\
             .add_inputs(items_translated, item_categories, shops)\
-            .add_outputs(shops_nlp, items_nlp, tenNN_items, threeNN_shops, items_clusters)\
+            .add_outputs(shops_nlp, items_nlp, tenNN_items, threeNN_shops, items_clusters, stage_out=True, register_replica=True)\
             .add_pegasus_profile(cores="12")
 
 # --- Add Preprocess Job ---------------------------------------------------------
@@ -187,51 +187,51 @@ categories_preprocessed = File("categories_preprocessed.pickle")
 
 preprocess_job = Job(preprocess)\
                     .add_inputs(items, item_categories, shops, sales_train, test)\
-                    .add_outputs(test_preprocessed, items_preprocessed, shops_preprocessed, sales_train_preprocessed, categories_preprocessed)
+                    .add_outputs(test_preprocessed, items_preprocessed, shops_preprocessed, sales_train_preprocessed, categories_preprocessed, stage_out=True, register_replica=True)
 
 # --- Add feature_eng_0 Job -------------------------------------------------------
 items_feature_eng_0 = File("items_feature_eng_0.pickle")
 shops_feature_eng_0 = File("shops_feature_eng_0.pickle")
 categories_feature_eng_0 = File("categories_feature_eng_0.pickle")
 
-feature_eng_0_job = Job(feature_eng_0, _id="eng_0")\
+feature_eng_0_job = Job(feature_eng_0)\
                         .add_inputs(items_preprocessed, shops_preprocessed, categories_preprocessed)\
-                        .add_outputs(items_feature_eng_0, shops_feature_eng_0, categories_feature_eng_0)
+                        .add_outputs(items_feature_eng_0, shops_feature_eng_0, categories_feature_eng_0, stage_out=True, register_replica=True)
 
 # --- Add feature_eng_1 Job -------------------------------------------------------
 main_data_feature_eng_1 = File("main_data_feature_eng_1.pickle")
 
 feature_eng_1_job = Job(feature_eng_1)\
                         .add_inputs(items_preprocessed, categories_preprocessed, sales_train_preprocessed, test_preprocessed)\
-                        .add_outputs(main_data_feature_eng_1)
+                        .add_outputs(main_data_feature_eng_1, stage_out=True, register_replica=True)
 
 # --- Add feature_eng_2 Job -------------------------------------------------------
 main_data_feature_eng_2 = File("main_data_feature_eng_2.pickle")
 
 feature_eng_2_job = Job(feature_eng_2)\
                         .add_inputs(main_data_feature_eng_1)\
-                        .add_outputs(main_data_feature_eng_2)
+                        .add_outputs(main_data_feature_eng_2, stage_out=True, register_replica=True)
 
 # --- Add feature_eng_3 Job -------------------------------------------------------
 main_data_feature_eng_3 = File("main_data_feature_eng_3.pickle")
 
 feature_eng_3_job = Job(feature_eng_3)\
                         .add_inputs(items_feature_eng_0, shops_feature_eng_0, categories_feature_eng_0, main_data_feature_eng_1)\
-                        .add_outputs(main_data_feature_eng_3)
+                        .add_outputs(main_data_feature_eng_3, stage_out=True, register_replica=True)
 
 # --- Add feature_eng_4 Job -------------------------------------------------------
 main_data_feature_eng_4 = File("main_data_feature_eng_4.pickle")
 
 feature_eng_4_job = Job(feature_eng_4)\
                         .add_inputs(holidays, main_data_feature_eng_1)\
-                        .add_outputs(main_data_feature_eng_4)
+                        .add_outputs(main_data_feature_eng_4, stage_out=True, register_replica=True)
 
 # --- Add feature_eng_5 Job -------------------------------------------------------
 main_data_feature_eng_5 = File("main_data_feature_eng_5.pickle")
 
 feature_eng_5_job = Job(feature_eng_5)\
                         .add_inputs(items_feature_eng_0, shops_feature_eng_0, categories_feature_eng_0, sales_train, main_data_feature_eng_1)\
-                        .add_outputs(main_data_feature_eng_5)
+                        .add_outputs(main_data_feature_eng_5, stage_out=True, register_replica=True)
 
 # --- Add merge Job ---------------------------------------------------------------
 train_group_0 = File("train_group_0.pickle")
@@ -247,7 +247,7 @@ test_groups = [test_group_0, test_group_1, test_group_2]
 
 merge_job = Job(merge)\
                 .add_inputs(tenNN_items, threeNN_shops, main_data_feature_eng_2, main_data_feature_eng_3, main_data_feature_eng_4, main_data_feature_eng_5)\
-                .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all)
+                .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, stage_out=True, register_replica=True)
 
 
 # --- Add Jobs to the Workflow dag -----------------------------------------------
@@ -263,7 +263,7 @@ for group in train_groups:
     xgboost_hp_tuning_job = Job(xgboost_hp_tuning)\
                                 .add_args("--file", group, "--space", xgboost_hp_tuning_space, "--trials", 100, "--early_stopping_rounds", 20, "--tree_method", "hist", "--output", params_out)\
                                 .add_inputs(group, xgboost_hp_tuning_space)\
-                                .add_outputs(params_out)
+                                .add_outputs(params_out, stage_out=True, register_replica=True)
 
     wf.add_jobs(xgboost_hp_tuning_job)
 
