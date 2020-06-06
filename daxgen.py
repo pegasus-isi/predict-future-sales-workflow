@@ -261,7 +261,7 @@ for group in train_groups:
     params_out = File(param_name)
     xgboost_hp_tuning_outputs.append(params_out)
     xgboost_hp_tuning_job = Job(xgboost_hp_tuning)\
-                                .add_args("-f", group, "-c", xgboost_hp_tuning_space, "-t", 100, "-e", 20, "-o", params_out)\
+                                .add_args("--file", group, "--space", xgboost_hp_tuning_space, "--trials", 100, "--early_stopping_rounds", 20, "--tree_method", "hist", "--output", params_out)\
                                 .add_inputs(group, xgboost_hp_tuning_space)\
                                 .add_outputs(params_out)
 
