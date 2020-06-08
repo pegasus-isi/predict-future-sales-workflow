@@ -7,7 +7,7 @@ from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
-from IPython import embed
+
 """
 Preprocesses data for the Future Sales Predictions
 
@@ -120,7 +120,6 @@ def main():
 
     tenNN_items, items_embedded_df, items_clusters = items_nlp(items, categories)
     threeNN_shops, shops_embedded_df               = shops_nlp(shops)
-    embed()
 
     pickle.dump(tenNN_items, open("tenNN_items.pickle", "wb"), protocol=4)
     pickle.dump(items_embedded_df, open("items_nlp.pickle", "wb"), protocol=4)
