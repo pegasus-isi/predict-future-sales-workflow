@@ -42,8 +42,8 @@ def get_train_2(data):
 
 def main():
     gc.enable()
-    #tenNN_items    = pd.read_pickle("tenNN_items.pickle")
-    #threeNN_shops  = pd.read_pickle("threeNN_shops.pickle")
+    tenNN_items    = pd.read_pickle("tenNN_items.pickle")
+    threeNN_shops  = pd.read_pickle("threeNN_shops.pickle")
     
     main_data_2    = pd.read_pickle("main_data_feature_eng_2.pickle")
     main_data_3    = pd.read_pickle("main_data_feature_eng_3.pickle")
@@ -62,8 +62,8 @@ def main():
     main_data_merged = merge_dataframes(main_data_merged, main_data_5, cols)
     main_data_5 = None
 
-    #main_data_merged = merge_dataframes(main_data_merged, tenNN_items, ["item_id"])
-    #main_data_merged = merge_dataframes(main_data_merged, threeNN_shops, ["shop_id"])
+    main_data_merged = merge_dataframes(main_data_merged, tenNN_items, ["item_id"])
+    main_data_merged = merge_dataframes(main_data_merged, threeNN_shops, ["shop_id"])
 
     #split dataframe to groups based on seniority
     group_0 = get_train_0(main_data_merged)
