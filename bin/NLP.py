@@ -7,7 +7,7 @@ from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
-
+from IPython import embed
 """
 Preprocesses data for the Future Sales Predictions
 
@@ -33,6 +33,9 @@ Preprocesses data for the Future Sales Predictions
 WHY id index mapping?  
 Some of the categories have been removed, it results in some of the items being removed
 e.g. we do not have item_id with id 1, hence need for this mapping between order in indices matrix and ids
+
+also issue with collapsing embeddings of the items names. There are a number of items with names so close to each other
+or basically the same after we clean the text that their embeddings are equal. We need to correct for that.
 """
 def find_kNN(embedding_vec, num_neighbors, col_names, embedding_cols, col_id):
     nbrs               = NearestNeighbors(n_neighbors=num_neighbors, algorithm="ball_tree").fit(embedding_vec[embedding_cols])
@@ -46,6 +49,7 @@ def find_kNN(embedding_vec, num_neighbors, col_names, embedding_cols, col_id):
         for j in range(indices.shape[1]):
             index = indices[i][j]
             indices[i][j] = id_map_dict[index]
+    indices.T[0] = embedding_vec[col_id].unique()
 	
     return pd.DataFrame(indices, columns = col_names)
 
@@ -116,6 +120,7 @@ def main():
 
     tenNN_items, items_embedded_df, items_clusters = items_nlp(items, categories)
     threeNN_shops, shops_embedded_df               = shops_nlp(shops)
+    embed()
 
     pickle.dump(tenNN_items, open("tenNN_items.pickle", "wb"), protocol=4)
     pickle.dump(items_embedded_df, open("items_nlp.pickle", "wb"), protocol=4)
