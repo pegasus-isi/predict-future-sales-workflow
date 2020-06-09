@@ -79,7 +79,8 @@ def run_trials(config, max_trials):
                         space=space,
                         algo=tpe.suggest,
                         max_evals=max_trials,
-                        trials=trials
+                        trials=trials,
+                        show_progressbar=False
                     )
     
     return trials.best_trial["result"]["loss"], best_config
