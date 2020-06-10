@@ -28,7 +28,7 @@ class predict_future_sales_workflow:
     output_multiple = None
 
     input_files = ["test.csv","items.csv","items_translated.csv","shops.csv","holidays.csv","sales_train.csv","item_categories.csv"]
-    config_files = ["xgboost_hp_tuning_space.json"]
+    config_files = ["merged_features.json", "xgboost_hp_tuning_space.json"]
 
     
     # --- Init ------------------------------------------------------------------
@@ -231,6 +231,7 @@ class predict_future_sales_workflow:
                                 .add_outputs(main_data_feature_eng_5, stage_out=True, register_replica=True)
 
         # --- Add merge Job ---------------------------------------------------------------
+        merged_features = File("merged_features.json")
         train_group_0 = File("train_group_0.pickle")
         test_group_0 = File("test_group_0.pickle")
         train_group_1 = File("train_group_1.pickle")
@@ -239,11 +240,11 @@ class predict_future_sales_workflow:
         test_group_2 = File("test_group_2.pickle")
         main_data_feature_eng_all = File("main_data_feature_eng_all.pickle")
 
-        train_groups = [train_group_0, train_group_1]#, train_group_2]
+        train_groups = [train_group_0, train_group_1, train_group_2]
         test_groups = [test_group_0, test_group_1, test_group_2] 
 
         merge_job = Job("merge")\
-                        .add_inputs(tenNN_items, threeNN_shops, main_data_feature_eng_2, main_data_feature_eng_3, main_data_feature_eng_4, main_data_feature_eng_5)\
+                        .add_inputs(merged_features, tenNN_items, threeNN_shops, main_data_feature_eng_2, main_data_feature_eng_3, main_data_feature_eng_4, main_data_feature_eng_5)\
                         .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, stage_out=True, register_replica=True)
 
 
@@ -272,14 +273,14 @@ def main():
     parser.add_argument("--xgb_trials", metavar="INT", type=int, nargs=1, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, nargs=1, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", help="Max trials for XGBoost hyperparameter tuning", required=False)
-    #parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, help="Train XGBoost by including features between [LEN_MIN, LEN_MAX]", required=False)
+    parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX]", required=False)
     #parser.add_argument("--xgb_feat_list", metavar="STR", type=int, nargs=2, help="Train XGBoost with the given list of features", required=False)
     parser.add_argument("--output_multiple", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()
     
-    #number_of_features = [i for i in range(args.xgb_feat_len[0], args.xgb_feat_len[1])]
+    number_of_features = [i for i in range(args.xgb_feat_len[0], args.xgb_feat_len[1])]
 
     workflow = predict_future_sales_workflow(args.output, args.output_multiple, args.xgb_trials, args.xgb_early_stopping, args.xgb_tree_method)
 

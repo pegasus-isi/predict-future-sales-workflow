@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import gc
+import json
 import pickle
 import pandas as pd
 
@@ -40,6 +41,24 @@ def get_train_2(data):
     return data.loc[data["item_seniority"] == 2, :]
 
 
+def sort_columns(columns_dict, columns_unsorted):
+    sorting_map = [ columns_dict[col] for col in columns_unsorted ]
+    columns_sorted = [col for _,col in sorted(zip(sorting_map,columns_unsorted))]
+    return columns_sorted
+
+
+def create_columns_dict(columns):
+    columns_dict = {}
+    mandatory_columns = ["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"]
+    for i in range(len(mandatory_columns)):
+        columns_dict[mandatory_columns[i]] = i
+    for i in range(len(columns)):
+        if not columns[i] in mandatory_columns:
+            columns_dict[columns[i]] = i + len(mandatory_columns)
+
+    return columns_dict
+
+
 def main():
     gc.enable()
     tenNN_items    = pd.read_pickle("tenNN_items.pickle")
@@ -63,7 +82,25 @@ def main():
     main_data_5 = None
 
     main_data_merged = merge_dataframes(main_data_merged, tenNN_items, ["item_id"])
+    tenNN_items = None
+
     main_data_merged = merge_dataframes(main_data_merged, threeNN_shops, ["shop_id"])
+    threeNN_shops = None
+
+    #keep columns specified in config file
+    columns_current = list(main_data_merged.columns)
+    columns_dict = create_columns_dict(columns_current)
+
+    columns_new = json.load(open("merged_features.json", "r"))["columns"]
+    columns_kept = sort_columns(columns_dict, list(set(columns_current) & set(columns_new)))
+    columns_dropped = sort_columns(columns_dict, list((set(columns_current) ^ set(columns_new)) & set(columns_current)))
+    columns_not_found = list((set(columns_current) ^ set(columns_new)) & set(columns_new))
+    
+    print(f"Columns not found: {columns_not_found}")
+    print(f"Columns dropped: {columns_dropped}")
+    print(f"Columns kept: {columns_kept}")
+
+    main_data_merged = main_data_merged[columns_kept]
 
     #split dataframe to groups based on seniority
     group_0 = get_train_0(main_data_merged)
