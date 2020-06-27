@@ -37,10 +37,10 @@ class predict_future_sales_workflow:
     def __init__(self, daxfile, output_multiple, xgb_args):
         self.daxfile = daxfile
         self.output_multiple = output_multiple
-        self.xgb_trials = xgb_args.xgb_trials
-        self.xgb_early_stopping = xgb_args.xgb_early_stopping
-        self.xgb_tree_method = xgb_args.xgb_tree_method
-        self.xgb_feat_lens = xgb_args.xgb_feat_lens
+        self.xgb_trials = xgb_args["xgb_trials"]
+        self.xgb_early_stopping = xgb_args["xgb_early_stopping"]
+        self.xgb_tree_method = xgb_args["xgb_tree_method"]
+        self.xgb_feat_lens = xgb_args["xgb_feat_lens"]
         
         self.wf_dir = Path(__file__).parent.resolve()
         
@@ -131,12 +131,12 @@ class predict_future_sales_workflow:
         merge = Transformation("merge", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/merge.py"), is_stageable=True)
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_hp_tuning.py"), is_stageable=True)
+        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="condorpool", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/daxgen.py"), is_stageable=True)
 
         # Add the xgboost model creation executable
         xgboost_model = Transformation("xgboost_model", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)
         
-        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, merge, xgboost_hp_tuning, xgboost_model)
+        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, merge, xgboost_hp_tuning_workflow, xgboost_model)
 
 
     # --- Replica Catalog ----------------------------------------------------------
@@ -244,7 +244,7 @@ class predict_future_sales_workflow:
         merged_features_output = File("merged_features_output.json")
         main_data_feature_eng_all = File("main_data_feature_eng_all.pickle")
 
-        train_groups = [train_group_0, train_group_1]#, train_group_2]
+        train_groups = [train_group_0, train_group_1, train_group_2]
         test_groups = [test_group_0, test_group_1, test_group_2] 
 
         merge_job = Job("merge")\
@@ -255,22 +255,30 @@ class predict_future_sales_workflow:
         # --- Add Jobs to the Workflow dag -----------------------------------------------
         self.wf.add_jobs(eda_job, nlp_job, preprocess_job, feature_eng_0_job, feature_eng_1_job, feature_eng_2_job, feature_eng_3_job, feature_eng_4_job, feature_eng_5_job, merge_job)
 
-        # --- Add subworkflow generation job ---------------------------------------------
-        prepare_subwf = Job("prepare_subwf")\
-                            .add_inputs(merged_features_output)\
-                            .add_outputs(nexrad_subwf_dax, transfer=False, register=False)
+        # --- Add subworkflow generation job for each group ------------------------------
+        for group_num in [0, 1, 2]:
+            xgboost_hp_tuning_subwf_dag = File(f"xgboost_hp_tuning_group_{group_num}_subwf.yml")
+            prepare_xgboost_hp_tuning_subwf = Job("xgboost_hp_tuning_workflow")\
+                                                .add_inputs(merged_features_output)\
+                                                .add_outputs(xgboost_hp_tuning_subwf_dag, stage_out=True, register_replica=True)\
+                                                .add_args("--xgb_data_file", f"train_group_{group_num}.pickle",
+                                                          "--xgb_cols_file", merged_features_output,
+                                                          "--xgb_trials", self.xgb_trials,
+                                                          "--xgb_early_stopping", self.xgb_early_stopping,
+                                                          "--xgb_tree_method", self.xgb_tree_method,
+                                                          "--xgb_feat_len", self.xgb_feat_lens,
+                                                          "--output", xgboost_hp_tuning_subwf_dag)
         
-        # --- Add hyperparameter tuning subworkflow --------------------------------------
-        subwf = DAX(nexrad_subwf_dax)
-        subwf.addArguments("--conf=%s" % nexrad_subwf_props.name,
-                       "-Dpegasus.catalog.replica.file=%s" % nexrad_subwf_rc.name,
-                       "-Dpegasus.catalog.site.file=nexrad_sites.xml",
-                       "--sites", "local,condorpool",
-                       "--basename", "nexrad",
-                       "--force",
-                       "--force-replan",
-                       "--output-site", "casa-dtn")
-        subwf.uses(nexrad_subwf_dax, link=Link.INPUT)
+            # --- Add hyperparameter tuning subworkflow --------------------------------------
+            xgboost_hp_tuning_subwf = SubWorkflow(xgboost_hp_tuning_subwf_dag, False)\
+                                        .add_args("--conf=pegasus.properties",
+                                                  "--sites", "condorpool",
+                                                  "--basename", f"xgboost_hp_tuning_group_{group_num}",
+                                                  "--force",
+                                                  "--force-replan",
+                                                  "--output-site", "local")
+            # --- Add Jobs to the Workflow dag -----------------------------------------------
+            self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf)
 
 
 def xgb_feat_len_check(xgb_feat_len):
@@ -308,7 +316,7 @@ def main():
         "xgb_tree_method": args.xgb_tree_method,
         "xgb_feat_lens": number_of_features
     }
-
+    
     workflow = predict_future_sales_workflow(args.output, args.output_multiple, xgb_args)
 
     workflow.create_pegasus_properties()

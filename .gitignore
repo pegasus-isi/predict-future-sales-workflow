@@ -2,3 +2,4 @@ submit/
 output/
 scratch/
 *.yml
+pegasus.properties
