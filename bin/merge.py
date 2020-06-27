@@ -4,6 +4,7 @@ import gc
 import json
 import pickle
 import pandas as pd
+from argparse import ArgumentParser
 
 """
 	FILES IN: 
@@ -22,6 +23,7 @@ import pandas as pd
                 'test_group_0.pickle'
                 'test_group_1.pickle'
                 'test_group_2.pickle'
+                'merged_features_output.json'
                 'main_data_feature_eng_all.pickle'
  """
 
@@ -78,6 +80,11 @@ def fiter_merged_columns(data, columns_new):
 
 def main():
     gc.enable()
+    
+    parser = ArgumentParser(description="Merge all generated features")
+    parser.add_argument("--cols", metavar="STR", type=str, default="", help="JSON file with columns to keep after merging", required=False)
+    args = parser.parse_args()
+
     tenNN_items    = pd.read_pickle("tenNN_items.pickle")
     threeNN_shops  = pd.read_pickle("threeNN_shops.pickle")
     
@@ -105,8 +112,9 @@ def main():
     threeNN_shops = None
 
     #filter columns to keep only the ones specified in the config
-    columns_new = json.load(open("merged_features.json", "r"))["columns"]
-    main_data_merged = fiter_merged_columns(main_data_merged, columns_new)
+    if args.cols:
+        columns_new = json.load(open(args.cols, "r"))["columns"]
+        main_data_merged = fiter_merged_columns(main_data_merged, columns_new)
     
     #split dataframe to groups based on seniority
     group_0 = get_train_0(main_data_merged)

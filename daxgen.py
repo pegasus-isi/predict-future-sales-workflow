@@ -2,10 +2,11 @@
 import os
 import logging
 import hashlib
+from pathlib import Path
 from datetime import datetime
 from argparse import ArgumentParser
+from itertools import combinations
 
-from pathlib import Path
 logging.basicConfig(level=logging.DEBUG)
 
 # --- Import Pegasus API -------------------------------------------------------
@@ -21,23 +22,25 @@ class predict_future_sales_workflow:
     daxfile = None
     wf_name = None
     wf_dir = None
+
     xgb_trials = None
     xgb_early_stopping = None
     xgb_tree_method = None
     
     output_multiple = None
 
-    input_files = ["test.csv","items.csv","items_translated.csv","shops.csv","holidays.csv","sales_train.csv","item_categories.csv"]
+    input_files = ["test.csv", "items.csv", "items_translated.csv", "shops.csv", "holidays.csv", "sales_train.csv", "item_categories.csv"]
     config_files = ["merged_features.json", "xgboost_hp_tuning_space.json"]
 
     
-    # --- Init ------------------------------------------------------------------
-    def __init__(self, daxfile, output_multiple, xgb_trials, xgb_early_stopping, xgb_tree_method):
+    # --- Init ---------------------------------------------------------------------
+    def __init__(self, daxfile, output_multiple, xgb_args):
         self.daxfile = daxfile
         self.output_multiple = output_multiple
-        self.xgb_trials = xgb_trials
-        self.xgb_early_stopping = xgb_early_stopping
-        self.xgb_tree_method = xgb_tree_method
+        self.xgb_trials = xgb_args.xgb_trials
+        self.xgb_early_stopping = xgb_args.xgb_early_stopping
+        self.xgb_tree_method = xgb_args.xgb_tree_method
+        self.xgb_feat_lens = xgb_args.xgb_feat_lens
         
         self.wf_dir = Path(__file__).parent.resolve()
         
@@ -238,51 +241,75 @@ class predict_future_sales_workflow:
         test_group_1 = File("test_group_1.pickle")
         train_group_2 = File("train_group_2.pickle")
         test_group_2 = File("test_group_2.pickle")
+        merged_features_output = File("merged_features_output.json")
         main_data_feature_eng_all = File("main_data_feature_eng_all.pickle")
 
-        train_groups = [train_group_0, train_group_1, train_group_2]
+        train_groups = [train_group_0, train_group_1]#, train_group_2]
         test_groups = [test_group_0, test_group_1, test_group_2] 
 
         merge_job = Job("merge")\
                         .add_inputs(merged_features, tenNN_items, threeNN_shops, main_data_feature_eng_2, main_data_feature_eng_3, main_data_feature_eng_4, main_data_feature_eng_5)\
-                        .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, stage_out=True, register_replica=True)
+                        .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, merged_features_output, stage_out=True, register_replica=True)
 
 
         # --- Add Jobs to the Workflow dag -----------------------------------------------
         self.wf.add_jobs(eda_job, nlp_job, preprocess_job, feature_eng_0_job, feature_eng_1_job, feature_eng_2_job, feature_eng_3_job, feature_eng_4_job, feature_eng_5_job, merge_job)
 
+        # --- Add subworkflow generation job ---------------------------------------------
+        prepare_subwf = Job("prepare_subwf")\
+                            .add_inputs(merged_features_output)\
+                            .add_outputs(nexrad_subwf_dax, transfer=False, register=False)
+        
+        # --- Add hyperparameter tuning subworkflow --------------------------------------
+        subwf = DAX(nexrad_subwf_dax)
+        subwf.addArguments("--conf=%s" % nexrad_subwf_props.name,
+                       "-Dpegasus.catalog.replica.file=%s" % nexrad_subwf_rc.name,
+                       "-Dpegasus.catalog.site.file=nexrad_sites.xml",
+                       "--sites", "local,condorpool",
+                       "--basename", "nexrad",
+                       "--force",
+                       "--force-replan",
+                       "--output-site", "casa-dtn")
+        subwf.uses(nexrad_subwf_dax, link=Link.INPUT)
 
-        hash_alg = hashlib.new("md5")
-        xgboost_hp_tuning_outputs = []
-        xgboost_hp_tuning_space = File("xgboost_hp_tuning_space.json")
-        for group in train_groups:
-            param_name = "{0}_hp_params.json".format(group.lfn[:str(group.lfn).find(".")])
-            params_out = File(param_name)
-            xgboost_hp_tuning_outputs.append(params_out)
-            xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
-                                        .add_args("--file", group, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", params_out)\
-                                        .add_inputs(group, xgboost_hp_tuning_space)\
-                                        .add_outputs(params_out, stage_out=True, register_replica=True)\
-                                        .add_pegasus_profile(cores="16")
 
-            self.wf.add_jobs(xgboost_hp_tuning_job)
+def xgb_feat_len_check(xgb_feat_len):
+    if xgb_feat_len[0] < -1:
+        xgb_feat_len[0] = -1
+    elif xgb_feat_len[0] < 5:
+        xgb_feat_len[0] = 5
 
+    if xgb_feat_len[1] < -1:
+        xgb_feat_len[1] = -1
+    elif xgb_feat_len[1] < xgb_feat_len[0]:
+        xgb_feat_len[1] = xgb_feat_len[0]
+
+    return xgb_feat_len
+    
 
 def main():
     parser = ArgumentParser(description="Pegasus Workflow for Kaggle's Future Sales Predictiong Competition")
     parser.add_argument("--xgb_trials", metavar="INT", type=int, nargs=1, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, nargs=1, default=5, help="XGBoost early stopping rounds", required=False)
-    parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", help="Max trials for XGBoost hyperparameter tuning", required=False)
-    parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX]", required=False)
-    #parser.add_argument("--xgb_feat_list", metavar="STR", type=int, nargs=2, help="Train XGBoost with the given list of features", required=False)
+    parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
+    parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
+    #parser.add_argument("--xgb_feat_list", metavar="STR", type=str, nargs=+, help="Train XGBoost with the given list of features", required=False)
     parser.add_argument("--output_multiple", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()
     
-    number_of_features = [i for i in range(args.xgb_feat_len[0], args.xgb_feat_len[1])]
+    args.xgb_feat_len = xgb_feat_len_check(args.xgb_feat_len)
+    number_of_features = [i for i in range(args.xgb_feat_len[0], args.xgb_feat_len[1]+1)]
 
-    workflow = predict_future_sales_workflow(args.output, args.output_multiple, args.xgb_trials, args.xgb_early_stopping, args.xgb_tree_method)
+    xgb_args = {
+        "xgb_trials": args.xgb_trials,
+        "xgb_early_stopping": args.xgb_early_stopping,
+        "xgb_tree_method": args.xgb_tree_method,
+        "xgb_feat_lens": number_of_features
+    }
+
+    workflow = predict_future_sales_workflow(args.output, args.output_multiple, xgb_args)
 
     workflow.create_pegasus_properties()
     workflow.create_sites_catalog()
