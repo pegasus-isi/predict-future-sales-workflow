@@ -107,8 +107,8 @@ class predict_future_sales_workflow:
         # Add the xgboost hyperparameter tuning executable
         xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_hp_tuning.py"), is_stageable=True)
 
-        # Add the xgboost model creation executable
-        xgboost_model = Transformation("xgboost_best_params", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_best_params.py"), is_stageable=True)
+        # Find best params from xgboost hp tuning
+        xgboost_best_params = Transformation("xgboost_best_params", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_best_params.py"), is_stageable=True)
         
         self.tc.add_transformations(xgboost_hp_tuning, xgboost_best_params)
 
@@ -123,34 +123,64 @@ class predict_future_sales_workflow:
             self.rc.add_replica("local", f, os.path.join(self.wf_dir, "config", f))
 
 
+    # --- Find position of the mandatory columns in the column list ------------------
+    def find_mandatory_col_positions(self):
+        columns = json.load(open(args.cols, "r"))["columns"]
+        mandatory_col_pos = [columns.index(x) for x in self.xgb_default_cols]
+        return (mandatory_col_pos, len(columns))
+
+
     # --- Workflow -------------------------------------------------------------------
     def create_workflow(self):
         self.wf = Workflow(self.wf_name, infer_dependencies=True)
 
         # --- Create hyperparameter tuning jobs and add to the dag ----------------------
-        # --- This should become a subworkflow that takes as input the merged features --
         hash_alg = hashlib.new("md5")
-        xgboost_hp_tuning_outputs = []
-        xgboost_mandatory_cols = [0, 1, 2, 3, 4] # first 5 columns of the merged table
-        xgboost_hp_tuning_space = File("xgboost_hp_tuning_space.json")
+        xgboost_data_file = File(self.xgb_data_file)
+        xgboost_hp_tuning_space = File(self.xgb_hp_tuning_conf)
+        params_prefix = self.xgb_data_file[:str(self.xgb_data_file).find(".")]
+        params_name = "{0}_hp_params.json".format(params_prefix)
+        xgboost_params_out = File(params_name)
 
         if self.xgb_feat_lens == [-1]:
-            for group in train_groups:
-                param_name = "{0}_hp_params.json".format(group.lfn[:str(group.lfn).find(".")])
-                params_out = File(param_name)
-                xgboost_hp_tuning_outputs.append(params_out)
-                xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
-                                            .add_args("--file", group, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", params_out)\
-                                            .add_inputs(group, xgboost_hp_tuning_space)\
-                                            .add_outputs(params_out, stage_out=True, register_replica=True)\
-                                            .add_pegasus_profile(cores="16")
+            xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
+                                        .add_args("--file", xgboost_data_file, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", xgboost_params_out)\
+                                        .add_inputs(xgboost_data_file, xgboost_hp_tuning_space)\
+                                        .add_outputs(xgboost_params_out, stage_out=True, register_replica=True)\
+                                        .add_pegasus_profile(cores="16")
 
-                self.wf.add_jobs(xgboost_hp_tuning_job)
+            self.wf.add_jobs(xgboost_hp_tuning_job)
         else:
-            for feat_len in self.xgb_feat_lens:
-                feat_combinations = 
-                for group in train_groups:
-                xgboost_hp_tuning_outputs.append(params_out)
+            xgboost_hp_tuning_outputs = []
+            (xgboost_mandatory_col_pos, xgboost_col_len) = self.find_mandatory_col_positions()
+            iter_indexes = [i for i in range(xgboost_col_len) if not i in xgboost_mandatory_col_pos]
+            for feat_len in range(self.xgb_feat_lens[0], self.xgb_feat_lens[1]+1):
+                feat_combinations = combinations(iter_indexes, feat_len - len(xgboost_mandatory_col_pos))
+                for feat_combination in feat_combinations:
+                    new_features = xgboost_mandatory_col_pos + list(feat_combination)
+                    temp_params_name = "{0}_hp_params_{1}.json".format(params_prefix, "_".join(new_features))
+                    temp_params_md5 = "{0}_hp_params_{1}.json".format(params_prefix, hashlib.md5("_".join(new_features).encode()).hexdigest())
+                    temp_xgboost_params_out = File("{0}.json".format(temp_params_md5))\
+                                                .add_metadata(original_name=temp_params_name, features="_".join(new_features))
+                    
+                    xgboost_hp_tuning_outputs.append(temp_xgboost_params_out)
+            
+                    xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
+                                                .add_args("--file", xgboost_data_file, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", xgboost_params_out, "--col_filter", ",".join(new_features))\
+                                                .add_inputs(xgboost_data_file, xgboost_hp_tuning_space)\
+                                                .add_outputs(temp_xgboost_params_out, stage_out=True, register_replica=True)\
+                                                .add_pegasus_profile(cores="16")
+                    
+                    self.wf.add_jobs(xgboost_hp_tuning_job)
+            
+            xgboost_best_params_job = Job("xgboost_best_params")\
+                                        .add_args("--prefix", params_prefix, "--output", xgboost_params_out)\
+                                        .add_outputs(xgboost_params_out, stage_out=True, register_replica=True)
+            
+            for xgboost_hp_tuning_output in xgboost_hp_tuning_outputs:                            
+                xgboost_best_params_job.add_inputs(xgboost_hp_tuning_output)
+
+            self.wf.add_jobs(xgboost_best_params_job)
 
 
 def xgb_feat_len_check(xgb_feat_len):
@@ -175,7 +205,6 @@ def main():
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
     parser.add_argument("--xgb_default_cols", metavar="STR", type=str, nargs=+, default=["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"], help="Columns to always use in hp tuning", required=False)
     parser.add_argument("--xgb_hp_tuning_conf", metavar="STR", type=str, nargs=1, default="xgboost_hp_tuning_space.json", help="JSON file describing hp tuning space", required=False)
-    #parser.add_argument("--xgb_feat_list", metavar="STR", type=str, nargs=+, help="Train XGBoost with the given list of features", required=False)
     parser.add_argument("--is_root_wf", action="store_true", help="Create the workflow as a root worfklow", required=False)
     parser.add_argument("--output_multiple", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
