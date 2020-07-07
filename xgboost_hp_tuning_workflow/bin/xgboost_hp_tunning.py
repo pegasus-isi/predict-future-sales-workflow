@@ -112,7 +112,7 @@ def main():
     parser.add_argument("--file", metavar="STR", type=str, help="File with training and validation data", required=True)
     parser.add_argument("--space", metavar="STR", type=str, help="JSON configuarion file containing trial space", required=True)
     parser.add_argument("--trials", metavar="INT", type=int, default=10, help="Total number of trials", required=False)
-    parser.add_argument("--early_stopping_rounds", metavar="INT", type=int, default=20, help="XGBoost early stopping rounds", required=False)
+    parser.add_argument("--early_stopping_rounds", metavar="INT", type=int, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--validation_months", metavar="INT", type=int, default=1, help="Number of trialing months for validation", required=False)
     parser.add_argument("--tree_method", metavar="STR", type=str, default="hist", help="XGBoost tree method", choices=["hist", "gpu_hist"], required=False)
     parser.add_argument("--gpu_id", metavar="INT", type=int, default=0, help="XGBoost target gpu id", required=False)

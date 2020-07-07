@@ -244,24 +244,29 @@ class predict_future_sales_workflow:
         merged_features_output = File("merged_features_output.json")
         main_data_feature_eng_all = File("main_data_feature_eng_all.pickle")
 
-        train_groups = [train_group_0, train_group_1, train_group_2]
-        test_groups = [test_group_0, test_group_1, test_group_2] 
+        train_test_files = {0: {"train": train_group_0, "test": test_group_0}, 
+                            1: {"train": train_group_1, "test": test_group_1},
+                            2: {"train": train_group_2, "test": test_group_2}}
 
         merge_job = Job("merge")\
                         .add_inputs(merged_features, tenNN_items, threeNN_shops, main_data_feature_eng_2, main_data_feature_eng_3, main_data_feature_eng_4, main_data_feature_eng_5)\
                         .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, merged_features_output, stage_out=True, register_replica=True)
 
-
         # --- Add Jobs to the Workflow dag -----------------------------------------------
         self.wf.add_jobs(eda_job, nlp_job, preprocess_job, feature_eng_0_job, feature_eng_1_job, feature_eng_2_job, feature_eng_3_job, feature_eng_4_job, feature_eng_5_job, merge_job)
 
-        # --- Add subworkflow generation job for each group ------------------------------
+        trained_models = {}
+        # --- Add hp tuning subworkflow generation job for each group ------------------------------
         for group_num in [0, 1, 2]:
+            params_name = f"train_group_{group_num}_hp_params.json"
+            xgboost_params_out = File(params_name)
+            train_test_files[group_num]["train_params"] = xgboost_params_out
+
             xgboost_hp_tuning_subwf_dag = File(f"xgboost_hp_tuning_group_{group_num}_subwf.yml")
             prepare_xgboost_hp_tuning_subwf = Job("xgboost_hp_tuning_workflow")\
                                                 .add_inputs(merged_features_output)\
                                                 .add_outputs(xgboost_hp_tuning_subwf_dag, stage_out=True, register_replica=True)\
-                                                .add_args("--xgb_data_file", f"train_group_{group_num}.pickle",
+                                                .add_args("--xgb_data_file", train_test_files[group_num]["train"],
                                                           "--xgb_cols_file", merged_features_output,
                                                           "--xgb_trials", self.xgb_trials,
                                                           "--xgb_early_stopping", self.xgb_early_stopping,
@@ -275,10 +280,25 @@ class predict_future_sales_workflow:
                                                   "--sites", "condorpool",
                                                   "--basename", f"xgboost_hp_tuning_group_{group_num}",
                                                   "--force",
-                                                  "--force-replan",
-                                                  "--output-site", "local")
+                                                  "--output-site", "local")\
+                                        .add_inputs(train_test_files[group_num]["train"])\
+                                        .add_outputs(xgboost_params_out, stage_out=True, register_replica=False)
+
+            # --- Add model creation job -----------------------------------------------------
+            feature_importance = File(f"train_group_{group_num}_feature_importance.pdf")
+            model = File(f"train_group_{group_num}_model.pickle")
+            trained_models[group_num] = model
+
+            xgboost_model_job = Job("xgboost_model")\
+                                    .add_inputs(train_test_files[group_num]["train"])\
+                                    .add_outputs(feature_importance, model)\
+                                    .add_args("--file", train_test_files[group_num]["train"],
+                                              "--early_stopping_rounds", self.xgb_early_stopping,
+                                              "--tree_method", self.xgb_tree_method,
+                                              "--output", xgboost_hp_tuning_subwf_dag)
+        
             # --- Add Jobs to the Workflow dag -----------------------------------------------
-            self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf)
+            self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf. xgboost_model_job)
 
 
 def xgb_feat_len_check(xgb_feat_len):
@@ -287,9 +307,7 @@ def xgb_feat_len_check(xgb_feat_len):
     elif xgb_feat_len[0] < 5:
         xgb_feat_len[0] = 5
 
-    if xgb_feat_len[1] < -1:
-        xgb_feat_len[1] = -1
-    elif xgb_feat_len[1] < xgb_feat_len[0]:
+    if xgb_feat_len[1] < xgb_feat_len[0]:
         xgb_feat_len[1] = xgb_feat_len[0]
 
     return xgb_feat_len
@@ -301,7 +319,6 @@ def main():
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, nargs=1, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
-    #parser.add_argument("--xgb_feat_list", metavar="STR", type=str, nargs=+, help="Train XGBoost with the given list of features", required=False)
     parser.add_argument("--output_multiple", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 

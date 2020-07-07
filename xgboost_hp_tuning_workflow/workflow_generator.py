@@ -189,9 +189,7 @@ def xgb_feat_len_check(xgb_feat_len):
     elif xgb_feat_len[0] < 5:
         xgb_feat_len[0] = 5
 
-    if xgb_feat_len[1] < -1:
-        xgb_feat_len[1] = -1
-    elif xgb_feat_len[1] < xgb_feat_len[0]:
+    if xgb_feat_len[1] < xgb_feat_len[0]:
         xgb_feat_len[1] = xgb_feat_len[0]
 
 
