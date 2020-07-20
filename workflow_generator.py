@@ -12,6 +12,13 @@ logging.basicConfig(level=logging.DEBUG)
 # --- Import Pegasus API -------------------------------------------------------
 from Pegasus.api import *
 
+default_xgb_args = {
+    "xgb_trials": 5,
+    "xgb_early_stopping": 5,
+    "xgb_tree_method": "hist",
+    "xgb_feat_lens": [-1,-1]
+}
+
 class predict_future_sales_workflow:
     wf = None
     sc = None
@@ -34,7 +41,7 @@ class predict_future_sales_workflow:
 
     
     # --- Init ---------------------------------------------------------------------
-    def __init__(self, daxfile, output_single, xgb_args):
+    def __init__(self, daxfile="workflow.yml", output_single=False, xgb_args=default_xgb_args):
         self.daxfile = daxfile
         self.output_single = output_single
         self.xgb_trials = xgb_args["xgb_trials"]
