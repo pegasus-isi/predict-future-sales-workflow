@@ -104,44 +104,44 @@ class predict_future_sales_workflow:
 
 
     # --- Transformation Catalog (Executables and Containers) ----------------------
-    def create_transformation_catalog(self):
+    def create_transformation_catalog(self, target_site="condorpool"):
         self.tc = TransformationCatalog()
 
         # Add the eda executable
-        eda = Transformation("eda", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/EDA.py"), is_stageable=True)
+        eda = Transformation("eda", site=target_site, pfn=os.path.join(self.wf_dir, "bin/EDA.py"), is_stageable=True)
 
         # Add the proprocess executable
-        preprocess = Transformation("preprocess", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/preprocess.py"), is_stageable=True)
+        preprocess = Transformation("preprocess", site=target_site, pfn=os.path.join(self.wf_dir, "bin/preprocess.py"), is_stageable=True)
 
         # Add the nlp executable
-        nlp = Transformation("nlp", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/NLP.py"), is_stageable=True)
+        nlp = Transformation("nlp", site=target_site, pfn=os.path.join(self.wf_dir, "bin/NLP.py"), is_stageable=True)
 
         # Add the feature_eng_0 executable
-        feature_eng_0 = Transformation("feature_eng_0", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/feature_eng_0.py"), is_stageable=True)
+        feature_eng_0 = Transformation("feature_eng_0", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_0.py"), is_stageable=True)
 
         # Add the feature_eng_1 executable
-        feature_eng_1 = Transformation("feature_eng_1", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/feature_eng_1.py"), is_stageable=True)
+        feature_eng_1 = Transformation("feature_eng_1", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_1.py"), is_stageable=True)
 
         # Add the feature_eng_2 executable
-        feature_eng_2 = Transformation("feature_eng_2", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/feature_eng_2.py"), is_stageable=True)
+        feature_eng_2 = Transformation("feature_eng_2", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_2.py"), is_stageable=True)
 
         # Add the feature_eng_3 executable
-        feature_eng_3 = Transformation("feature_eng_3", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/feature_eng_3.py"), is_stageable=True)
+        feature_eng_3 = Transformation("feature_eng_3", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_3.py"), is_stageable=True)
 
         # Add the feature_eng_4 executable
-        feature_eng_4 = Transformation("feature_eng_4", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/feature_eng_4.py"), is_stageable=True)
+        feature_eng_4 = Transformation("feature_eng_4", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_4.py"), is_stageable=True)
 
         # Add the feature_eng_5 executable
-        feature_eng_5 = Transformation("feature_eng_5", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/feature_eng_5.py"), is_stageable=True)
+        feature_eng_5 = Transformation("feature_eng_5", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_5.py"), is_stageable=True)
 
         # Add the merge executable
-        merge = Transformation("merge", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/merge.py"), is_stageable=True)
+        merge = Transformation("merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/merge.py"), is_stageable=True)
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="condorpool", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/daxgen.py"), is_stageable=True)
+        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/daxgen.py"), is_stageable=True)
 
         # Add the xgboost model creation executable
-        xgboost_model = Transformation("xgboost_model", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)
+        xgboost_model = Transformation("xgboost_model", site=target_site, pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)
         
         self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, merge, xgboost_hp_tuning_workflow, xgboost_model)
 
