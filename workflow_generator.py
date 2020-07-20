@@ -27,16 +27,16 @@ class predict_future_sales_workflow:
     xgb_early_stopping = None
     xgb_tree_method = None
     
-    output_multiple = None
+    output_single = None
 
     input_files = ["test.csv", "items.csv", "items_translated.csv", "shops.csv", "holidays.csv", "sales_train.csv", "item_categories.csv"]
     config_files = ["merged_features.json", "xgboost_hp_tuning_space.json"]
 
     
     # --- Init ---------------------------------------------------------------------
-    def __init__(self, daxfile, output_multiple, xgb_args):
+    def __init__(self, daxfile, output_single, xgb_args):
         self.daxfile = daxfile
-        self.output_multiple = output_multiple
+        self.output_single = output_single
         self.xgb_trials = xgb_args["xgb_trials"]
         self.xgb_early_stopping = xgb_args["xgb_early_stopping"]
         self.xgb_tree_method = xgb_args["xgb_tree_method"]
@@ -50,14 +50,14 @@ class predict_future_sales_workflow:
 
     # --- Write files in directory -------------------------------------------------
     def write(self):
-        if self.output_multiple:
-            self.sc.write()
-            self.rc.write()
-            self.tc.write()
-        else:
+        if self.output_single:
             self.wf.add_site_catalog(self.sc)
             self.wf.add_replica_catalog(self.rc)
             self.wf.add_transformation_catalog(self.tc)
+        else:
+            self.sc.write()
+            self.rc.write()
+            self.tc.write()
 
         self.props.write()
         self.wf.write()
@@ -298,7 +298,7 @@ class predict_future_sales_workflow:
                                               "--output", xgboost_hp_tuning_subwf_dag)
         
             # --- Add Jobs to the Workflow dag -----------------------------------------------
-            self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf. xgboost_model_job)
+            self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf, xgboost_model_job)
 
 
 def xgb_feat_len_check(xgb_feat_len):
@@ -319,7 +319,7 @@ def main():
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, nargs=1, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
-    parser.add_argument("--output_multiple", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
+    parser.add_argument("--output_single", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()
@@ -334,7 +334,7 @@ def main():
         "xgb_feat_lens": number_of_features
     }
     
-    workflow = predict_future_sales_workflow(args.output, args.output_multiple, xgb_args)
+    workflow = predict_future_sales_workflow(args.output, args.output_single, xgb_args)
 
     workflow.create_pegasus_properties()
     workflow.create_sites_catalog()
