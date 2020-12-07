@@ -138,7 +138,7 @@ class predict_future_sales_workflow:
         merge = Transformation("merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/merge.py"), is_stageable=True)
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/daxgen.py"), is_stageable=True)
+        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)
 
         # Add the xgboost model creation executable
         xgboost_model = Transformation("xgboost_model", site=target_site, pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)
@@ -326,7 +326,7 @@ def main():
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, nargs=1, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
-    parser.add_argument("--output_single", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
+    parser.add_argument("--output_single", action="store_true", help="Output Pegasus configuration in a single yaml file", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()

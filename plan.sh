@@ -15,9 +15,9 @@ DAXFILE=$1
 # --input-dir tells Pegasus where to find workflow input files.
 # --output-dir tells Pegasus where to place workflow output files.
 pegasus-plan --conf pegasus.properties \
-    --dax $DAXFILE \
     --dir $DIR/submit \
     --sites condorpool \
     --output-site local \
     --cleanup leaf \
-    --force 
+    --force \
+    $DAXFILE
