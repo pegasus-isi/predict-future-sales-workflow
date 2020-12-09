@@ -297,9 +297,10 @@ class predict_future_sales_workflow:
             trained_models[group_num] = model
 
             xgboost_model_job = Job("xgboost_model")\
-                                    .add_inputs(train_test_files[group_num]["train"])\
+                                    .add_inputs(train_test_files[group_num]["train"], xgboost_params_out)\
                                     .add_outputs(feature_importance, model)\
                                     .add_args("--file", train_test_files[group_num]["train"],
+                                              "--params", xgboost_params_out,
                                               "--early_stopping_rounds", self.xgb_early_stopping,
                                               "--tree_method", self.xgb_tree_method,
                                               "--output", xgboost_hp_tuning_subwf_dag)

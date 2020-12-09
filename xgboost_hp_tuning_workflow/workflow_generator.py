@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+
 import os
+import json
 import logging
 import hashlib
 from pathlib import Path
@@ -37,12 +39,14 @@ class predict_future_sales_workflow:
     def __init__(self, is_root_wf, daxfile, output_multiple, xgb_args):
         self.daxfile = daxfile
         self.output_multiple = output_multiple
-        self.xgb_trials = xgb_args.xgb_trials
-        self.xgb_early_stopping = xgb_args.xgb_early_stopping
-        self.xgb_tree_method = xgb_args.xgb_tree_method
-        self.xgb_feat_lens = xgb_args.xgb_feat_lens
-        self.xgb_default_cols = xgb_args.xgb_default_cols
-        self.xgb_hp_tuning_conf = xgb_args.xgb_hp_tuning_conf
+        self.xgb_trials = xgb_args["xgb_trials"]
+        self.xgb_early_stopping = xgb_args["xgb_early_stopping"]
+        self.xgb_tree_method = xgb_args["xgb_tree_method"]
+        self.xgb_feat_lens = xgb_args["xgb_feat_lens"]
+        self.xgb_data_file = xgb_args["xgb_data_file"]
+        self.xgb_cols_file = xgb_args["xgb_cols_file"]
+        self.xgb_default_cols = xgb_args["xgb_default_cols"]
+        self.xgb_hp_tuning_conf = xgb_args["xgb_hp_tuning_conf"]
         self.is_root_wf = is_root_wf
         
         self.wf_dir = Path(__file__).parent.resolve()
@@ -54,13 +58,13 @@ class predict_future_sales_workflow:
     # --- Write files in directory -------------------------------------------------
     def write(self):
         if self.output_multiple:
-            self.sc.write()
-            self.rc.write()
-            self.tc.write()
+            if self.sc: self.sc.write()
+            if self.rc: self.rc.write()
+            if self.tc: self.tc.write()
         else:
-            self.wf.add_site_catalog(self.sc)
-            self.wf.add_replica_catalog(self.rc)
-            self.wf.add_transformation_catalog(self.tc)
+            if self.sc: self.wf.add_site_catalog(self.sc)
+            if self.rc: self.wf.add_replica_catalog(self.rc)
+            if self.tc: self.wf.add_transformation_catalog(self.tc)
 
         if self.is_root_wf:
             self.props.write()
@@ -125,7 +129,7 @@ class predict_future_sales_workflow:
 
     # --- Find position of the mandatory columns in the column list ------------------
     def find_mandatory_col_positions(self):
-        columns = json.load(open(args.cols, "r"))["columns"]
+        columns = json.load(open(self.xgb_cols_file, "r"))["columns"]
         mandatory_col_pos = [columns.index(x) for x in self.xgb_default_cols]
         return (mandatory_col_pos, len(columns))
 
@@ -141,7 +145,6 @@ class predict_future_sales_workflow:
         params_prefix = self.xgb_data_file[:str(self.xgb_data_file).find(".")]
         params_name = "{0}_hp_params.json".format(params_prefix)
         xgboost_params_out = File(params_name)
-
         if self.xgb_feat_lens == [-1]:
             xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
                                         .add_args("--file", xgboost_data_file, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", xgboost_params_out)\
@@ -154,13 +157,14 @@ class predict_future_sales_workflow:
             xgboost_hp_tuning_outputs = []
             (xgboost_mandatory_col_pos, xgboost_col_len) = self.find_mandatory_col_positions()
             iter_indexes = [i for i in range(xgboost_col_len) if not i in xgboost_mandatory_col_pos]
-            for feat_len in range(self.xgb_feat_lens[0], self.xgb_feat_lens[1]+1):
+            for feat_len in self.xgb_feat_lens:
                 feat_combinations = combinations(iter_indexes, feat_len - len(xgboost_mandatory_col_pos))
                 for feat_combination in feat_combinations:
                     new_features = xgboost_mandatory_col_pos + list(feat_combination)
+                    new_features = list(map(str, new_features))
                     temp_params_name = "{0}_hp_params_{1}.json".format(params_prefix, "_".join(new_features))
                     temp_params_md5 = "{0}_hp_params_{1}.json".format(params_prefix, hashlib.md5("_".join(new_features).encode()).hexdigest())
-                    temp_xgboost_params_out = File("{0}.json".format(temp_params_md5))\
+                    temp_xgboost_params_out = File(temp_params_md5)\
                                                 .add_metadata(original_name=temp_params_name, features="_".join(new_features))
                     
                     xgboost_hp_tuning_outputs.append(temp_xgboost_params_out)
@@ -184,7 +188,7 @@ class predict_future_sales_workflow:
 
 
 def xgb_feat_len_check(xgb_feat_len):
-    if xgb_feat_len[0] < -1:
+    if xgb_feat_len[0] < 0:
         xgb_feat_len[0] = -1
     elif xgb_feat_len[0] < 5:
         xgb_feat_len[0] = 5
@@ -192,23 +196,24 @@ def xgb_feat_len_check(xgb_feat_len):
     if xgb_feat_len[1] < xgb_feat_len[0]:
         xgb_feat_len[1] = xgb_feat_len[0]
 
+    return xgb_feat_len
+
 
 def main():
     parser = ArgumentParser(description="Pegasus Workflow for Kaggle's Future Sales Predictiong Competition")
-    parser.add_argument("--xgb_data_file", metavar="STR", type=str, nargs=1, default="main_data_feature_eng_all.pickle", help="Data file", required=False)
-    parser.add_argument("--xgb_cols_file", metavar="STR", type=str, nargs=1, default="merged_features_output.json", help="Columns file", required=False)
-    parser.add_argument("--xgb_trials", metavar="INT", type=int, nargs=1, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
-    parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, nargs=1, default=5, help="XGBoost early stopping rounds", required=False)
-    parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
+    parser.add_argument("--xgb_data_file", metavar="STR", type=str, default="main_data_feature_eng_all.pickle", help="Data file", required=False)
+    parser.add_argument("--xgb_cols_file", metavar="STR", type=str, default="merged_features_output.json", help="Columns file", required=False)
+    parser.add_argument("--xgb_trials", metavar="INT", type=int, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
+    parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, default=5, help="XGBoost early stopping rounds", required=False)
+    parser.add_argument("--xgb_tree_method", metavar="STR", type=str, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
-    parser.add_argument("--xgb_default_cols", metavar="STR", type=str, nargs=+, default=["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"], help="Columns to always use in hp tuning", required=False)
-    parser.add_argument("--xgb_hp_tuning_conf", metavar="STR", type=str, nargs=1, default="xgboost_hp_tuning_space.json", help="JSON file describing hp tuning space", required=False)
+    parser.add_argument("--xgb_default_cols", metavar="STR", type=str, nargs="+", default=["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"], help="Columns to always use in hp tuning", required=False)
+    parser.add_argument("--xgb_hp_tuning_conf", metavar="STR", type=str, default="xgboost_hp_tuning_space.json", help="JSON file describing hp tuning space", required=False)
     parser.add_argument("--is_root_wf", action="store_true", help="Create the workflow as a root worfklow", required=False)
     parser.add_argument("--output_multiple", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()
-    
     args.xgb_feat_len = xgb_feat_len_check(args.xgb_feat_len)
     number_of_features = [i for i in range(args.xgb_feat_len[0], args.xgb_feat_len[1]+1)]
 
@@ -220,16 +225,16 @@ def main():
         "xgb_data_file": args.xgb_data_file,
         "xgb_cols_file": args.xgb_cols_file,
         "xgb_default_cols": args.xgb_default_cols,
-        "xgb_hp_tuning_conf:" args.xgb_hp_tuning_conf
+        "xgb_hp_tuning_conf": args.xgb_hp_tuning_conf
     }
 
-    workflow = predict_future_sales_workflow(args.is_root_wf, rgs.output, args.output_multiple, xgb_args)
+    workflow = predict_future_sales_workflow(args.is_root_wf, args.output, args.output_multiple, xgb_args)
 
     if args.is_root_wf:
         workflow.create_pegasus_properties()
-    workflow.create_sites_catalog()
+        workflow.create_sites_catalog()
     workflow.create_transformation_catalog()
-    workflow.create_replica_catalog()
+    #workflow.create_replica_catalog()
     workflow.create_workflow()
 
     workflow.write()
