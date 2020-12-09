@@ -87,7 +87,7 @@ def plot_feature_importance(prefix, model):
 def main():
     global tree_method, gpu_id, early_stopping_rounds
 
-    parser = ArgumentParser(description="XGBoost Hyperparameter Tuning based on Hyperopt")
+    parser = ArgumentParser(description="XGBoost Model Train")
     parser.add_argument("--file", metavar="STR", type=str, help="File with training and validation data", required=True)
     parser.add_argument("--params", metavar="STR", type=str, help="JSON configuarion file containing xgboost params and list of columns", required=True)
     parser.add_argument("--early_stopping_rounds", metavar="INT", type=int, default=5, help="XGBoost early stopping rounds", required=False)
