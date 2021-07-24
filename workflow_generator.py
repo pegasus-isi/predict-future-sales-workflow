@@ -41,9 +41,10 @@ class predict_future_sales_workflow:
 
     
     # --- Init ---------------------------------------------------------------------
-    def __init__(self, daxfile="workflow.yml", output_single=False, xgb_args=default_xgb_args):
+    def __init__(self, daxfile="workflow.yml", output_single=False, monitoring=False, xgb_args=default_xgb_args):
         self.daxfile = daxfile
         self.output_single = output_single
+        self.panorama_monitoring = monitoring
         self.xgb_trials = xgb_args["xgb_trials"]
         self.xgb_early_stopping = xgb_args["xgb_early_stopping"]
         self.xgb_tree_method = xgb_args["xgb_tree_method"]
@@ -52,7 +53,7 @@ class predict_future_sales_workflow:
         self.wf_dir = Path(__file__).parent.resolve()
         
         ts = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
-        self.wf_name = "predict-sales-workflow-%s" % ts
+        self.wf_name = "predict-sales-wf-%s" % ts
 
 
     # --- Write files in directory -------------------------------------------------
@@ -67,7 +68,8 @@ class predict_future_sales_workflow:
             self.tc.write()
 
         self.props.write()
-        self.wf.write()
+        with open(self.daxfile, "w+") as f:
+            self.wf.write(f)
 
 
     # --- Configuration (Pegasus Properties) ---------------------------------------
@@ -77,6 +79,7 @@ class predict_future_sales_workflow:
         #props["pegasus.data.configuration"] = "condorio"
         self.props["pegasus.monitord.encoding"] = "json"                                                                    
         self.props["pegasus.catalog.workflow.amqp.url"] = "amqp://friend:donatedata@msgs.pegasus.isi.edu:5672/prod/workflows"
+        self.props["pegasus.catalog.replica.file"] = os.path.join(self.wf_dir, "replicas.yml")
 
 
     # --- Site Catalog -------------------------------------------------------------
@@ -114,7 +117,8 @@ class predict_future_sales_workflow:
         preprocess = Transformation("preprocess", site=target_site, pfn=os.path.join(self.wf_dir, "bin/preprocess.py"), is_stageable=True)
 
         # Add the nlp executable
-        nlp = Transformation("nlp", site=target_site, pfn=os.path.join(self.wf_dir, "bin/NLP.py"), is_stageable=True)
+        nlp = Transformation("nlp", site=target_site, pfn=os.path.join(self.wf_dir, "bin/NLP.py"), is_stageable=True)\
+                .add_pegasus_profile(cores="16")
 
         # Add the feature_eng_0 executable
         feature_eng_0 = Transformation("feature_eng_0", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_0.py"), is_stageable=True)
@@ -138,12 +142,25 @@ class predict_future_sales_workflow:
         merge = Transformation("merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/merge.py"), is_stageable=True)
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)
+        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)\
+                                        .add_env(PYTHONPATH="/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/python3.6/site-packages:/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/pegasus/externals/python")
+
+        # Add the xgboost hyperparameter tuning executable
+        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_hp_tuning.py"), is_stageable=True)\
+                                        .add_pegasus_profile(cores="16")
+
+        # Find best params from xgboost hp tuning
+        xgboost_best_params = Transformation("xgboost_best_params", site="condorpool", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_best_params.py"), is_stageable=True)
 
         # Add the xgboost model creation executable
-        xgboost_model = Transformation("xgboost_model", site=target_site, pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)
+        xgboost_model = Transformation("xgboost_model", site=target_site, pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)\
+                            .add_pegasus_profile(cores="16")
         
-        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, merge, xgboost_hp_tuning_workflow, xgboost_model)
+        if self.xgb_tree_method == "gpu_hist":
+            xgboost_hp_tuning.add_pegasus_profile(gpus="1")
+            xgboost_model.add_pegasus_profile(gpus="1")
+        
+        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, merge, xgboost_hp_tuning_workflow, xgboost_hp_tuning, xgboost_best_params, xgboost_model)
 
 
     # --- Replica Catalog ----------------------------------------------------------
@@ -182,8 +199,7 @@ class predict_future_sales_workflow:
         items_clusters = File("items_clusters.pickle")
         nlp_job = Job("nlp")\
                     .add_inputs(items_translated, item_categories, shops)\
-                    .add_outputs(shops_nlp, items_nlp, tenNN_items, threeNN_shops, items_clusters, stage_out=True, register_replica=True)\
-                    .add_pegasus_profile(cores="16")
+                    .add_outputs(shops_nlp, items_nlp, tenNN_items, threeNN_shops, items_clusters, stage_out=True, register_replica=True)
 
         # --- Add Preprocess Job ---------------------------------------------------------
         test_preprocessed = File("test_preprocessed.pickle")
@@ -257,7 +273,8 @@ class predict_future_sales_workflow:
 
         merge_job = Job("merge")\
                         .add_inputs(merged_features, tenNN_items, threeNN_shops, main_data_feature_eng_2, main_data_feature_eng_3, main_data_feature_eng_4, main_data_feature_eng_5)\
-                        .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, merged_features_output, stage_out=True, register_replica=True)
+                        .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, merged_features_output, stage_out=True, register_replica=True)\
+                        .add_args("--cols", merged_features)
 
         # --- Add Jobs to the Workflow dag -----------------------------------------------
         self.wf.add_jobs(eda_job, nlp_job, preprocess_job, feature_eng_0_job, feature_eng_1_job, feature_eng_2_job, feature_eng_3_job, feature_eng_4_job, feature_eng_5_job, merge_job)
@@ -278,13 +295,12 @@ class predict_future_sales_workflow:
                                                           "--xgb_trials", self.xgb_trials,
                                                           "--xgb_early_stopping", self.xgb_early_stopping,
                                                           "--xgb_tree_method", self.xgb_tree_method,
-                                                          "--xgb_feat_len", self.xgb_feat_lens,
+                                                          "--xgb_feat_len", " ".join(map(str, self.xgb_feat_lens)),
                                                           "--output", xgboost_hp_tuning_subwf_dag)
         
             # --- Add hyperparameter tuning subworkflow --------------------------------------
             xgboost_hp_tuning_subwf = SubWorkflow(xgboost_hp_tuning_subwf_dag, False)\
-                                        .add_args("--conf=pegasus.properties",
-                                                  "--sites", "condorpool",
+                                        .add_args("--sites", "condorpool",
                                                   "--basename", f"xgboost_hp_tuning_group_{group_num}",
                                                   "--force",
                                                   "--output-site", "local")\
@@ -310,7 +326,7 @@ class predict_future_sales_workflow:
 
 
 def xgb_feat_len_check(xgb_feat_len):
-    if xgb_feat_len[0] < -1:
+    if xgb_feat_len[0] < 0:
         xgb_feat_len[0] = -1
     elif xgb_feat_len[0] < 5:
         xgb_feat_len[0] = 5
@@ -323,26 +339,25 @@ def xgb_feat_len_check(xgb_feat_len):
 
 def main():
     parser = ArgumentParser(description="Pegasus Workflow for Kaggle's Future Sales Predictiong Competition")
-    parser.add_argument("--xgb_trials", metavar="INT", type=int, nargs=1, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
-    parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, nargs=1, default=5, help="XGBoost early stopping rounds", required=False)
-    parser.add_argument("--xgb_tree_method", metavar="STR", type=str, nargs=1, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
+    parser.add_argument("--xgb_trials", metavar="INT", type=int, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
+    parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, default=5, help="XGBoost early stopping rounds", required=False)
+    parser.add_argument("--xgb_tree_method", metavar="STR", type=str, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type: ['hist', 'gpu_hist']", required=False)
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
+    parser.add_argument("--monitoring", action="store_true", help="Enable Panorama Monitoring", required=False)
     parser.add_argument("--output_single", action="store_true", help="Output Pegasus configuration in a single yaml file", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()
-    
     args.xgb_feat_len = xgb_feat_len_check(args.xgb_feat_len)
-    number_of_features = [i for i in range(args.xgb_feat_len[0], args.xgb_feat_len[1]+1)]
 
     xgb_args = {
         "xgb_trials": args.xgb_trials,
         "xgb_early_stopping": args.xgb_early_stopping,
         "xgb_tree_method": args.xgb_tree_method,
-        "xgb_feat_lens": number_of_features
+        "xgb_feat_lens": args.xgb_feat_len
     }
-    
-    workflow = predict_future_sales_workflow(args.output, args.output_single, xgb_args)
+
+    workflow = predict_future_sales_workflow(args.output, args.output_single, args.monitoring, xgb_args)
 
     workflow.create_pegasus_properties()
     workflow.create_sites_catalog()

@@ -32,13 +32,13 @@ def hyper_objective(params):
     # Instantiate the classifier
     model = xgb.XGBRegressor(
                     n_estimators=1000,
-                    max_depth=int(params["max_depth"]),
+                    max_depth=int(params["x_max_depth"]),
                     learning_rate=0.1,
-                    gamma=params["gamma"],
-                    min_child_weight=params["min_child_weight"],
-                    subsample=params["subsample"],
-                    colsample_bytree=params["colsample_bytree"],
-                    reg_lambda=params["reg_lambda"],
+                    gamma=params["x_gamma"],
+                    min_child_weight=params["x_min_child_weight"],
+                    subsample=params["x_subsample"],
+                    colsample_bytree=params["x_colsample_bytree"],
+                    reg_lambda=params["x_reg_lambda"],
                     objective="reg:squarederror",
                     tree_method=tree_method,
                     gpu_id=gpu_id,
@@ -66,12 +66,12 @@ def hyper_objective(params):
 
 def run_trials(config, max_trials):
     space = {
-        "max_depth": hp.quniform("x_max_depth", config["max_depth"]["low"], config["max_depth"]["high"], 1),
-        "min_child_weight": hp.quniform("x_min_child_weight", config["min_child_weight"]["low"], config["min_child_weight"]["high"], 1),
-        "subsample": hp.uniform("x_subsample", config["subsample"]["low"], config["subsample"]["high"]),
-        "gamma": hp.uniform("x_gamma", config["gamma"]["low"], config["gamma"]["high"]),
-        "colsample_bytree": hp.uniform("x_colsample_bytree", config["colsample_bytree"]["low"], config["colsample_bytree"]["high"]),
-        "reg_lambda": hp.uniform("x_reg_lambda", config["reg_lambda"]["low"], config["reg_lambda"]["high"]),
+        "x_max_depth": hp.quniform("max_depth", config["max_depth"]["low"], config["max_depth"]["high"], 1),
+        "x_min_child_weight": hp.quniform("min_child_weight", config["min_child_weight"]["low"], config["min_child_weight"]["high"], 1),
+        "x_subsample": hp.uniform("subsample", config["subsample"]["low"], config["subsample"]["high"]),
+        "x_gamma": hp.uniform("gamma", config["gamma"]["low"], config["gamma"]["high"]),
+        "x_colsample_bytree": hp.uniform("colsample_bytree", config["colsample_bytree"]["low"], config["colsample_bytree"]["high"]),
+        "x_reg_lambda": hp.uniform("reg_lambda", config["reg_lambda"]["low"], config["reg_lambda"]["high"]),
     }
 
     trials = Trials()

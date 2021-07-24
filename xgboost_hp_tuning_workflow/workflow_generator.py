@@ -26,7 +26,7 @@ class predict_future_sales_workflow:
     wf_dir = None
     
     is_root_wf = None
-    output_multiple = None
+    output_single = None
     
     xgb_trials = None
     xgb_early_stopping = None
@@ -36,9 +36,9 @@ class predict_future_sales_workflow:
 
     
     # --- Init ---------------------------------------------------------------------
-    def __init__(self, is_root_wf, daxfile, output_multiple, xgb_args):
+    def __init__(self, is_root_wf, daxfile, output_single, xgb_args):
         self.daxfile = daxfile
-        self.output_multiple = output_multiple
+        self.output_single = output_single
         self.xgb_trials = xgb_args["xgb_trials"]
         self.xgb_early_stopping = xgb_args["xgb_early_stopping"]
         self.xgb_tree_method = xgb_args["xgb_tree_method"]
@@ -57,18 +57,20 @@ class predict_future_sales_workflow:
 
     # --- Write files in directory -------------------------------------------------
     def write(self):
-        if self.output_multiple:
-            if self.sc: self.sc.write()
-            if self.rc: self.rc.write()
-            if self.tc: self.tc.write()
-        else:
+        if self.output_single:
             if self.sc: self.wf.add_site_catalog(self.sc)
             if self.rc: self.wf.add_replica_catalog(self.rc)
             if self.tc: self.wf.add_transformation_catalog(self.tc)
+        else:
+            if self.sc: self.sc.write()
+            if self.rc: self.rc.write()
+            if self.tc: self.tc.write()
 
         if self.is_root_wf:
             self.props.write()
-        self.wf.write()
+
+        with open(self.daxfile, "w+") as f:
+            self.wf.write(f)
 
 
     # --- Configuration (Pegasus Properties) ---------------------------------------
@@ -109,10 +111,14 @@ class predict_future_sales_workflow:
         self.tc = TransformationCatalog()
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_hp_tuning.py"), is_stageable=True)
+        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_hp_tuning.py"), is_stageable=True)\
+                                        .add_pegasus_profile(cores="16")
 
         # Find best params from xgboost hp tuning
         xgboost_best_params = Transformation("xgboost_best_params", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_best_params.py"), is_stageable=True)
+        
+        if self.xgb_tree_method == "gpu_hist":
+            xgboost_hp_tuning.add_pegasus_profile(gpus="1")
         
         self.tc.add_transformations(xgboost_hp_tuning, xgboost_best_params)
 
@@ -149,8 +155,7 @@ class predict_future_sales_workflow:
             xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
                                         .add_args("--file", xgboost_data_file, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", xgboost_params_out)\
                                         .add_inputs(xgboost_data_file, xgboost_hp_tuning_space)\
-                                        .add_outputs(xgboost_params_out, stage_out=True, register_replica=True)\
-                                        .add_pegasus_profile(cores="16")
+                                        .add_outputs(xgboost_params_out, stage_out=True, register_replica=True)
 
             self.wf.add_jobs(xgboost_hp_tuning_job)
         else:
@@ -172,8 +177,7 @@ class predict_future_sales_workflow:
                     xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
                                                 .add_args("--file", xgboost_data_file, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", xgboost_params_out, "--col_filter", ",".join(new_features))\
                                                 .add_inputs(xgboost_data_file, xgboost_hp_tuning_space)\
-                                                .add_outputs(temp_xgboost_params_out, stage_out=True, register_replica=True)\
-                                                .add_pegasus_profile(cores="16")
+                                                .add_outputs(temp_xgboost_params_out, stage_out=True, register_replica=True)
                     
                     self.wf.add_jobs(xgboost_hp_tuning_job)
             
@@ -210,7 +214,7 @@ def main():
     parser.add_argument("--xgb_default_cols", metavar="STR", type=str, nargs="+", default=["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"], help="Columns to always use in hp tuning", required=False)
     parser.add_argument("--xgb_hp_tuning_conf", metavar="STR", type=str, default="xgboost_hp_tuning_space.json", help="JSON file describing hp tuning space", required=False)
     parser.add_argument("--is_root_wf", action="store_true", help="Create the workflow as a root worfklow", required=False)
-    parser.add_argument("--output_multiple", action="store_true", help="Output Pegasus configuration in multiple files", required=False)
+    parser.add_argument("--output_single", action="store_true", help="Output Pegasus configuration in a single yaml file", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()
@@ -228,13 +232,14 @@ def main():
         "xgb_hp_tuning_conf": args.xgb_hp_tuning_conf
     }
 
-    workflow = predict_future_sales_workflow(args.is_root_wf, args.output, args.output_multiple, xgb_args)
+    workflow = predict_future_sales_workflow(args.is_root_wf, args.output, args.output_single, xgb_args)
 
     if args.is_root_wf:
         workflow.create_pegasus_properties()
         workflow.create_sites_catalog()
-    workflow.create_transformation_catalog()
-    #workflow.create_replica_catalog()
+        workflow.create_replica_catalog()
+        workflow.create_transformation_catalog()
+    
     workflow.create_workflow()
 
     workflow.write()

@@ -50,22 +50,25 @@ def sort_columns(columns_dict, columns_unsorted):
     return columns_sorted
 
 
-def create_columns_dict(columns):
+def create_columns_dict(columns, mandatory):
     columns_dict = {}
-    mandatory_columns = ["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"]
-    for i in range(len(mandatory_columns)):
-        columns_dict[mandatory_columns[i]] = i
+    for i in range(len(mandatory)):
+        columns_dict[mandatory[i]] = i
     for i in range(len(columns)):
-        if not columns[i] in mandatory_columns:
-            columns_dict[columns[i]] = i + len(mandatory_columns)
+        if not columns[i] in mandatory:
+            columns_dict[columns[i]] = i + len(mandatory)
 
     return columns_dict
 
 
-def fiter_merged_columns(data, columns_new):
+def fiter_merged_columns(data, columns_new, columns_mandatory):
     #keep columns specified in config file
     columns_current = list(data.columns)
-    columns_dict = create_columns_dict(columns_current)
+    columns_dict = create_columns_dict(columns_current, columns_mandatory)
+
+    for col in columns_mandatory:
+        if not col in columns_new:
+            columns_new.append(col)
 
     columns_kept = sort_columns(columns_dict, list(set(columns_current) & set(columns_new)))
     columns_dropped = sort_columns(columns_dict, list((set(columns_current) ^ set(columns_new)) & set(columns_current)))
@@ -84,6 +87,8 @@ def main():
     parser = ArgumentParser(description="Merge all generated features")
     parser.add_argument("--cols", metavar="STR", type=str, default="", help="JSON file with columns to keep after merging", required=False)
     args = parser.parse_args()
+
+    columns_mandatory = ["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id", "item_seniority"]
 
     tenNN_items    = pd.read_pickle("tenNN_items.pickle")
     threeNN_shops  = pd.read_pickle("threeNN_shops.pickle")
@@ -114,7 +119,7 @@ def main():
     #filter columns to keep only the ones specified in the config
     if args.cols:
         columns_new = json.load(open(args.cols, "r"))["columns"]
-        main_data_merged = fiter_merged_columns(main_data_merged, columns_new)
+        main_data_merged = fiter_merged_columns(main_data_merged, columns_new, columns_mandatory)
     
     #split dataframe to groups based on seniority
     group_0 = get_train_0(main_data_merged)

@@ -8,7 +8,6 @@ import xgboost as xgb
 import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 
-plt.use('Agg')
 plt.style.use('ggplot')
 
 """
@@ -76,6 +75,7 @@ def load_data(filename, validation_months, column_filter):
 
 
 def plot_feature_importance(prefix, model):
+    plt.ioff()
     fig, ax = plt.subplots(1,1,figsize=(16,8))
     xgb.plot_importance(booster=model, ax=ax)
     plt.savefig(f"{prefix}_feature_importance.pdf")
@@ -110,7 +110,7 @@ def main():
     prefix = args.file[:args.file.find(".")]
 
     plot_feature_importance(prefix, model)
-    pickle.dump(items, open(f"{prefix}_model.pickle", "wb"), protocol=4)
+    pickle.dump(model, open(f"{prefix}_model.pickle", "wb"), protocol=4)
     
 if __name__ == "__main__":
     main()
