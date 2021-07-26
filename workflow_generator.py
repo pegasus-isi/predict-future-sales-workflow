@@ -139,28 +139,35 @@ class predict_future_sales_workflow:
         feature_eng_5 = Transformation("feature_eng_5", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_5.py"), is_stageable=True)
 
         # Add the merge executable
-        merge = Transformation("merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/merge.py"), is_stageable=True)
+        feature_merge = Transformation("feature_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_merge.py"), is_stageable=True)
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)\
-                                        .add_env(PYTHONPATH="/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/python3.6/site-packages:/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/pegasus/externals/python")
+        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="local", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)
+#\
+#                                        .add_env(PYTHONPATH="/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/python3.6/site-packages:/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/pegasus/externals/python")
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_hp_tuning.py"), is_stageable=True)\
+        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_hp_tuning.py"), is_stageable=True)\
                                         .add_pegasus_profile(cores="16")
 
         # Find best params from xgboost hp tuning
-        xgboost_best_params = Transformation("xgboost_best_params", site="condorpool", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_best_params.py"), is_stageable=True)
+        xgboost_best_params = Transformation("xgboost_best_params", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_best_params.py"), is_stageable=True)
 
         # Add the xgboost model creation executable
         xgboost_model = Transformation("xgboost_model", site=target_site, pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)\
                             .add_pegasus_profile(cores="16")
         
+        # Add the xgboost model prediction executable
+        predict = Transformation("predict", site=target_site, pfn=os.path.join(self.wf_dir, "bin/predict.py"), is_stageable=True)
+        
+        # Add the prediction merge executable
+        predict_merge = Transformation("predict_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/predict_merge.py"), is_stageable=True)
+        
         if self.xgb_tree_method == "gpu_hist":
             xgboost_hp_tuning.add_pegasus_profile(gpus="1")
             xgboost_model.add_pegasus_profile(gpus="1")
         
-        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, merge, xgboost_hp_tuning_workflow, xgboost_hp_tuning, xgboost_best_params, xgboost_model)
+        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, feature_merge, xgboost_hp_tuning_workflow, xgboost_hp_tuning, xgboost_best_params, xgboost_model, predict, predict_merge)
 
 
     # --- Replica Catalog ----------------------------------------------------------
@@ -271,13 +278,13 @@ class predict_future_sales_workflow:
                             1: {"train": train_group_1, "test": test_group_1},
                             2: {"train": train_group_2, "test": test_group_2}}
 
-        merge_job = Job("merge")\
+        feature_merge_job = Job("feature_merge")\
                         .add_inputs(merged_features, tenNN_items, threeNN_shops, main_data_feature_eng_2, main_data_feature_eng_3, main_data_feature_eng_4, main_data_feature_eng_5)\
                         .add_outputs(train_group_0, train_group_1, train_group_2, test_group_0, test_group_1, test_group_2, main_data_feature_eng_all, merged_features_output, stage_out=True, register_replica=True)\
                         .add_args("--cols", merged_features)
 
         # --- Add Jobs to the Workflow dag -----------------------------------------------
-        self.wf.add_jobs(eda_job, nlp_job, preprocess_job, feature_eng_0_job, feature_eng_1_job, feature_eng_2_job, feature_eng_3_job, feature_eng_4_job, feature_eng_5_job, merge_job)
+        self.wf.add_jobs(eda_job, nlp_job, preprocess_job, feature_eng_0_job, feature_eng_1_job, feature_eng_2_job, feature_eng_3_job, feature_eng_4_job, feature_eng_5_job, feature_merge_job)
 
         trained_models = {}
         # --- Add hp tuning subworkflow generation job for each group ------------------------------
@@ -290,6 +297,7 @@ class predict_future_sales_workflow:
             prepare_xgboost_hp_tuning_subwf = Job("xgboost_hp_tuning_workflow")\
                                                 .add_inputs(merged_features_output)\
                                                 .add_outputs(xgboost_hp_tuning_subwf_dag, stage_out=True, register_replica=True)\
+                                                .add_profiles(Namespace.SELECTOR, key="execution.site", value="local")\
                                                 .add_args("--xgb_data_file", train_test_files[group_num]["train"],
                                                           "--xgb_cols_file", merged_features_output,
                                                           "--xgb_trials", self.xgb_trials,
