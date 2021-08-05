@@ -77,7 +77,6 @@ class predict_future_sales_workflow:
     def create_pegasus_properties(self):
         self.props = Properties()
 
-        #props["pegasus.data.configuration"] = "condorio"
         self.props["pegasus.monitord.encoding"] = "json"                                                                    
         self.props["pegasus.catalog.workflow.amqp.url"] = "amqp://friend:donatedata@msgs.pegasus.isi.edu:5672/prod/workflows"
     
