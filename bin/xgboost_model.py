@@ -2,7 +2,6 @@
 
 import pickle
 import json
-import numpy as np
 import pandas as pd
 import xgboost as xgb
 import matplotlib.pyplot as plt
@@ -15,9 +14,12 @@ Tunes hyperparameres for a set of features.
 	
 	FILES IN: 
             'main_data_feature_eng_all.pickle'
+            'xgboost_model_params.json'
+
 	FILES OUT: 
             '{prefix}_feature_importance.pdf'
             '{prefix}_model.pickle'
+            '{prefix}_predictions.pickle'
 """
 
 # -----------------           HELPER  FUNCTIONS       -------------------------
@@ -82,7 +84,7 @@ def plot_feature_importance(prefix, model):
     plt.close(fig)
 
     return
-    
+
 
 def main():
     global tree_method, gpu_id, early_stopping_rounds
@@ -94,7 +96,6 @@ def main():
     parser.add_argument("--validation_months", metavar="INT", type=int, default=1, help="Number of trialing months for validation", required=False)
     parser.add_argument("--tree_method", metavar="STR", type=str, default="hist", help="XGBoost tree method", choices=["hist", "gpu_hist"], required=False)
     parser.add_argument("--gpu_id", metavar="INT", type=int, default=0, help="XGBoost target gpu id", required=False)
-    parser.add_argument("--output", metavar="STR", type=str, default="best_parameters.json", help="Output file", required=False)
 
     args = parser.parse_args()
 
@@ -108,8 +109,11 @@ def main():
     model = train(params["best_config"])
     
     prefix = args.file[:args.file.find(".")]
-
     plot_feature_importance(prefix, model)
+    
+    predictions = create_predictions(mode)
+    pickle.dump(predictions, open(args.output, "wb"), protocol=4)
+    
     pickle.dump(model, open(f"{prefix}_model.pickle", "wb"), protocol=4)
     
 if __name__ == "__main__":

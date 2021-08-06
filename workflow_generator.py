@@ -142,8 +142,6 @@ class predict_future_sales_workflow:
 
         # Add the xgboost hyperparameter tuning executable
         xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="local", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)
-#\
-#                                        .add_env(PYTHONPATH="/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/python3.6/site-packages:/home/georgpap/Software/Pegasus/pegasus-5.1.0panorama/lib/pegasus/externals/python")
 
         # Add the xgboost hyperparameter tuning executable
         xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_hp_tuning.py"), is_stageable=True)\
@@ -157,7 +155,7 @@ class predict_future_sales_workflow:
                             .add_pegasus_profile(cores="16")
         
         # Add the xgboost model prediction executable
-        predict = Transformation("predict", site=target_site, pfn=os.path.join(self.wf_dir, "bin/predict.py"), is_stageable=True)
+        model_predict = Transformation("model_predict", site=target_site, pfn=os.path.join(self.wf_dir, "bin/model_predict.py"), is_stageable=True)
         
         # Add the prediction merge executable
         predict_merge = Transformation("predict_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/predict_merge.py"), is_stageable=True)
@@ -166,7 +164,7 @@ class predict_future_sales_workflow:
             xgboost_hp_tuning.add_pegasus_profile(gpus="1")
             xgboost_model.add_pegasus_profile(gpus="1")
         
-        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, feature_merge, xgboost_hp_tuning_workflow, xgboost_hp_tuning, xgboost_best_params, xgboost_model, predict, predict_merge)
+        self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, feature_merge, xgboost_hp_tuning_workflow, xgboost_hp_tuning, xgboost_best_params, xgboost_model, model_predict, predict_merge)
 
 
     # --- Replica Catalog ----------------------------------------------------------
@@ -273,6 +271,7 @@ class predict_future_sales_workflow:
         merged_features_output = File("merged_features_output.json")
         main_data_feature_eng_all = File("main_data_feature_eng_all.pickle")
 
+
         train_test_files = {0: {"train": train_group_0, "test": test_group_0}, 
                             1: {"train": train_group_1, "test": test_group_1},
                             2: {"train": train_group_2, "test": test_group_2}}
@@ -286,6 +285,7 @@ class predict_future_sales_workflow:
         self.wf.add_jobs(eda_job, nlp_job, preprocess_job, feature_eng_0_job, feature_eng_1_job, feature_eng_2_job, feature_eng_3_job, feature_eng_4_job, feature_eng_5_job, feature_merge_job)
 
         trained_models = {}
+        test_predictions = {}
         # --- Add hp tuning subworkflow generation job for each group ------------------------------
         for group_num in [0, 1, 2]:
             params_name = f"train_group_{group_num}_hp_params.json"
@@ -294,16 +294,16 @@ class predict_future_sales_workflow:
 
             xgboost_hp_tuning_subwf_dag = File(f"xgboost_hp_tuning_group_{group_num}_subwf.yml")
             prepare_xgboost_hp_tuning_subwf = Job("xgboost_hp_tuning_workflow")\
-                                                .add_inputs(merged_features_output)\
-                                                .add_outputs(xgboost_hp_tuning_subwf_dag, stage_out=True, register_replica=True)\
-                                                .add_profiles(Namespace.SELECTOR, key="execution.site", value="local")\
                                                 .add_args("--xgb_data_file", train_test_files[group_num]["train"],
                                                           "--xgb_cols_file", merged_features_output,
                                                           "--xgb_trials", self.xgb_trials,
                                                           "--xgb_early_stopping", self.xgb_early_stopping,
                                                           "--xgb_tree_method", self.xgb_tree_method,
                                                           "--xgb_feat_len", " ".join(map(str, self.xgb_feat_lens)),
-                                                          "--output", xgboost_hp_tuning_subwf_dag)
+                                                          "--output", xgboost_hp_tuning_subwf_dag)\
+                                                .add_inputs(merged_features_output)\
+                                                .add_outputs(xgboost_hp_tuning_subwf_dag, stage_out=True, register_replica=True)\
+                                                .add_profiles(Namespace.SELECTOR, key="execution.site", value="local")
         
             # --- Add hyperparameter tuning subworkflow --------------------------------------
             xgboost_hp_tuning_subwf = SubWorkflow(xgboost_hp_tuning_subwf_dag, False)\
@@ -320,16 +320,33 @@ class predict_future_sales_workflow:
             trained_models[group_num] = model
 
             xgboost_model_job = Job("xgboost_model")\
-                                    .add_inputs(train_test_files[group_num]["train"], xgboost_params_out)\
-                                    .add_outputs(feature_importance, model)\
                                     .add_args("--file", train_test_files[group_num]["train"],
                                               "--params", xgboost_params_out,
                                               "--early_stopping_rounds", self.xgb_early_stopping,
-                                              "--tree_method", self.xgb_tree_method,
-                                              "--output", xgboost_hp_tuning_subwf_dag)
+                                              "--tree_method", self.xgb_tree_method)\
+                                    .add_inputs(train_test_files[group_num]["train"], xgboost_params_out)\
+                                    .add_outputs(feature_importance, model, stage_out=True, register_replica=False)
+
+            predictions = File(f"test_group_{group_num}_predictions.pickle")
+            test_predictions[group_num] = predictions
+            model_predict_job = Job("model_predict")\
+                                    .add_args("--file", train_test_files[group_num]["test"],
+                                              "--params", xgboost_params_out,
+                                              "--model", model)\
+                                    .add_inputs(train_test_files[group_num]["test"], model)\
+                                    .add_outputs(predictions)
         
             # --- Add Jobs to the Workflow dag -----------------------------------------------
-            self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf, xgboost_model_job)
+            self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf, xgboost_model_job, model_predict_job)
+
+
+        all_item_predictions = File("item_predictions.csv")
+        predict_merge_job = Job("predict_merge")\
+                                .add_inputs(test, test_predictions[0], test_predictions[1], test_predictions[2])\
+                                .add_outputs(all_item_predictions, stage_out=True, register_replica=False)
+
+        # --- Add Jobs to the Workflow dag -----------------------------------------------
+        self.wf.add_jobs(predict_merge_job)
 
 
 def xgb_feat_len_check(xgb_feat_len):
