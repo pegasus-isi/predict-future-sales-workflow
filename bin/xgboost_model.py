@@ -19,7 +19,6 @@ Tunes hyperparameres for a set of features.
 	FILES OUT: 
             '{prefix}_feature_importance.pdf'
             '{prefix}_model.pickle'
-            '{prefix}_predictions.pickle'
 """
 
 # -----------------           HELPER  FUNCTIONS       -------------------------
@@ -110,9 +109,6 @@ def main():
     
     prefix = args.file[:args.file.find(".")]
     plot_feature_importance(prefix, model)
-    
-    predictions = create_predictions(mode)
-    pickle.dump(predictions, open(args.output, "wb"), protocol=4)
     
     pickle.dump(model, open(f"{prefix}_model.pickle", "wb"), protocol=4)
     

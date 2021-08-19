@@ -334,7 +334,7 @@ class predict_future_sales_workflow:
                                               "--params", xgboost_params_out,
                                               "--model", model)\
                                     .add_inputs(train_test_files[group_num]["test"], model)\
-                                    .add_outputs(predictions)
+                                    .add_outputs(predictions, stage_out=True, register_replica=False)
         
             # --- Add Jobs to the Workflow dag -----------------------------------------------
             self.wf.add_jobs(prepare_xgboost_hp_tuning_subwf, xgboost_hp_tuning_subwf, xgboost_model_job, model_predict_job)
