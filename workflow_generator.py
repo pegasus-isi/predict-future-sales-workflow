@@ -41,9 +41,10 @@ class predict_future_sales_workflow:
 
     
     # --- Init ---------------------------------------------------------------------
-    def __init__(self, daxfile="workflow.yml", output_single=False, monitoring=False, xgb_args=default_xgb_args):
+    def __init__(self, daxfile="workflow.yml", output_single=False, monitoring=False, max_cores=1, xgb_args=default_xgb_args):
         self.daxfile = daxfile
         self.output_single = output_single
+        self.max_cores = max_cores
         self.panorama_monitoring = monitoring
         self.xgb_trials = xgb_args["xgb_trials"]
         self.xgb_early_stopping = xgb_args["xgb_early_stopping"]
@@ -76,9 +77,15 @@ class predict_future_sales_workflow:
     def create_pegasus_properties(self):
         self.props = Properties()
 
-        self.props["pegasus.monitord.encoding"] = "json"                                                                    
-        self.props["pegasus.catalog.workflow.amqp.url"] = "amqp://friend:donatedata@msgs.pegasus.isi.edu:5672/prod/workflows"
         self.props["pegasus.catalog.replica.file"] = os.path.join(self.wf_dir, "replicas.yml")
+        
+        if self.panorama_monitoring:
+            props["pegasus.monitord.encoding"] = "json"
+            props["pegasus.catalog.workflow.amqp.events"] = "stampede.*"
+            props["pegasus.catalog.workflow.amqp.url"] = "amqps://panorama:panorama@hostname:5671/panorama/monitoring"
+        else:
+            self.props["pegasus.monitord.encoding"] = "json"                                                                    
+            self.props["pegasus.catalog.workflow.amqp.url"] = "amqp://friend:donatedata@msgs.pegasus.isi.edu:5672/prod/workflows"
 
 
     # --- Site Catalog -------------------------------------------------------------
@@ -98,10 +105,21 @@ class predict_future_sales_workflow:
                     )
 
         condorpool = Site("condorpool")\
-                        .add_pegasus_profile(style="condor")\
                         .add_condor_profile(universe="vanilla")\
-                        .add_profiles(Namespace.PEGASUS, key="data.configuration", value="condorio")
+                        .add_pegasus_profile(
+                            style="condor",
+                            data_configuration="nonsharedfs",
+                            auxillary_local="true"
+                        )
 
+        if self.panorama_monitoring:
+            condorpool.add_pegasus_profiles(
+                    grid_start_arguments="-m 10",
+                )\
+                .add_env(key="KICKSTART_MON_URL", value="rabbitmqs://panorama:panorama@hostname:15671/api/exchanges/panorama/monitoring/publish")\
+                .add_env(key="PEGASUS_TRANSFER_PUBLISH", value="1")\
+                .add_env(key="PEGASUS_AMQP_URL", value="amqps://panorama:panorama@hostname:5671/panorama/monitoring")
+    
         self.sc.add_sites(local, condorpool)
 
 
@@ -109,61 +127,76 @@ class predict_future_sales_workflow:
     def create_transformation_catalog(self, target_site="condorpool"):
         self.tc = TransformationCatalog()
 
+        predict_sales_container = Container("predict_sales_container",
+            Container.SINGULARITY,
+            image="docker:///papajim/predict_sales_container:latest",
+            image_site="dockerhub"
+        )
+
+
         # Add the eda executable
-        eda = Transformation("eda", site=target_site, pfn=os.path.join(self.wf_dir, "bin/EDA.py"), is_stageable=True)
+        eda = Transformation("eda", site=target_site, pfn=os.path.join(self.wf_dir, "bin/EDA.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the proprocess executable
-        preprocess = Transformation("preprocess", site=target_site, pfn=os.path.join(self.wf_dir, "bin/preprocess.py"), is_stageable=True)
+        preprocess = Transformation("preprocess", site=target_site, pfn=os.path.join(self.wf_dir, "bin/preprocess.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the nlp executable
-        nlp = Transformation("nlp", site=target_site, pfn=os.path.join(self.wf_dir, "bin/NLP.py"), is_stageable=True)\
-                .add_pegasus_profile(cores="16")
+        nlp = Transformation("nlp", site=target_site, pfn=os.path.join(self.wf_dir, "bin/NLP.py"), is_stageable=True, container=predict_sales_container)\
+                .add_pegasus_profile(cores=self.max_cores)
 
         # Add the feature_eng_0 executable
-        feature_eng_0 = Transformation("feature_eng_0", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_0.py"), is_stageable=True)
+        feature_eng_0 = Transformation("feature_eng_0", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_0.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the feature_eng_1 executable
-        feature_eng_1 = Transformation("feature_eng_1", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_1.py"), is_stageable=True)
+        feature_eng_1 = Transformation("feature_eng_1", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_1.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the feature_eng_2 executable
-        feature_eng_2 = Transformation("feature_eng_2", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_2.py"), is_stageable=True)
+        feature_eng_2 = Transformation("feature_eng_2", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_2.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the feature_eng_3 executable
-        feature_eng_3 = Transformation("feature_eng_3", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_3.py"), is_stageable=True)
+        feature_eng_3 = Transformation("feature_eng_3", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_3.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the feature_eng_4 executable
-        feature_eng_4 = Transformation("feature_eng_4", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_4.py"), is_stageable=True)
+        feature_eng_4 = Transformation("feature_eng_4", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_4.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the feature_eng_5 executable
-        feature_eng_5 = Transformation("feature_eng_5", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_5.py"), is_stageable=True)
+        feature_eng_5 = Transformation("feature_eng_5", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_eng_5.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the merge executable
-        feature_merge = Transformation("feature_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_merge.py"), is_stageable=True)
+        feature_merge = Transformation("feature_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_merge.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="local", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)
+        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="local", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_hp_tuning.py"), is_stageable=True)\
-                                        .add_pegasus_profile(cores="16")
+        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_hp_tuning.py"), is_stageable=True, container=predict_sales_container)\
+                                        .add_pegasus_profile(cores=self.max_cores)
 
         # Find best params from xgboost hp tuning
-        xgboost_best_params = Transformation("xgboost_best_params", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_best_params.py"), is_stageable=True)
+        xgboost_best_params = Transformation("xgboost_best_params", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_best_params.py"), is_stageable=True, container=predict_sales_container)
 
         # Add the xgboost model creation executable
-        xgboost_model = Transformation("xgboost_model", site=target_site, pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True)\
-                            .add_pegasus_profile(cores="16")
+        xgboost_model = Transformation("xgboost_model", site=target_site, pfn=os.path.join(self.wf_dir, "bin/xgboost_model.py"), is_stageable=True, container=predict_sales_container)\
+                            .add_pegasus_profile(cores=self.max_cores)
         
         # Add the xgboost model prediction executable
-        model_predict = Transformation("model_predict", site=target_site, pfn=os.path.join(self.wf_dir, "bin/model_predict.py"), is_stageable=True)
+        model_predict = Transformation("model_predict", site=target_site, pfn=os.path.join(self.wf_dir, "bin/model_predict.py"), is_stageable=True, container=predict_sales_container)
         
         # Add the prediction merge executable
-        predict_merge = Transformation("predict_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/predict_merge.py"), is_stageable=True)
+        predict_merge = Transformation("predict_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/predict_merge.py"), is_stageable=True, container=predict_sales_container)
         
-        if self.xgb_tree_method == "gpu_hist":
-            xgboost_hp_tuning.add_pegasus_profile(gpus="1")
-            xgboost_model.add_pegasus_profile(gpus="1")
+        if self.xgb_tree_method == "gpu_hist" and self.panorama_monitoring:
+            xgboost_hp_tuning.add_pegasus_profiles(gpus=1, grid_start_arguments="-G -m 10")\
+                             .add_env(key="KICKSTART_MON_GRAPHICS_PCIE", value="TRUE")
+            xgboost_model.add_pegasus_profiles(gpus=1, grid_start_arguments="-G -m 10")\
+                             .add_env(key="KICKSTART_MON_GRAPHICS_PCIE", value="TRUE")
+
+        elif self.xgb_tree_method == "gpu_hist":
+            xgboost_hp_tuning.add_pegasus_profile(gpus=1)
+            xgboost_model.add_pegasus_profile(gpus=1)
         
+        
+        self.tc.add_containers(predict_sales_container)
         self.tc.add_transformations(eda, nlp, preprocess, feature_eng_0, feature_eng_1, feature_eng_2, feature_eng_3, feature_eng_4, feature_eng_5, feature_merge, xgboost_hp_tuning_workflow, xgboost_hp_tuning, xgboost_best_params, xgboost_model, model_predict, predict_merge)
 
 
@@ -333,7 +366,7 @@ class predict_future_sales_workflow:
                                     .add_args("--file", train_test_files[group_num]["test"],
                                               "--params", xgboost_params_out,
                                               "--model", model)\
-                                    .add_inputs(train_test_files[group_num]["test"], model)\
+                                    .add_inputs(train_test_files[group_num]["test"], xgboost_params_out, model)\
                                     .add_outputs(predictions, stage_out=True, register_replica=False)
         
             # --- Add Jobs to the Workflow dag -----------------------------------------------
@@ -363,6 +396,7 @@ def xgb_feat_len_check(xgb_feat_len):
 
 def main():
     parser = ArgumentParser(description="Pegasus Workflow for Kaggle's Future Sales Predictiong Competition")
+    parser.add_argument("--max_cores", metavar="INT", type=int, default=1, help="Max cores that can be allocated", required=False)
     parser.add_argument("--xgb_trials", metavar="INT", type=int, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--xgb_tree_method", metavar="STR", type=str, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type: ['hist', 'gpu_hist']", required=False)
@@ -381,7 +415,7 @@ def main():
         "xgb_feat_lens": args.xgb_feat_len
     }
 
-    workflow = predict_future_sales_workflow(args.output, args.output_single, args.monitoring, xgb_args)
+    workflow = predict_future_sales_workflow(args.output, args.output_single, args.monitoring, args.max_cores, xgb_args)
 
     workflow.create_pegasus_properties()
     workflow.create_sites_catalog()

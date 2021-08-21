@@ -25,7 +25,7 @@ def create_predictions(filename, column_filter, model):
     X_test = test_data[test_data["date_block_num"] == 34].drop(["item_cnt_month"], axis=1)
     Y_test = model.predict(X_test).clip(0, 20)
 
-    Y_pred = data.loc[data['date_block_num']==34, ['shop_id','item_id']]
+    Y_pred = test_data.loc[test_data['date_block_num']==34, ['shop_id','item_id']]
     Y_pred['prediction'] = Y_test
 
     return Y_pred
@@ -41,7 +41,9 @@ def main():
 
     args = parser.parse_args()
 
-    model = pickle.load(args.model)
+    with open(args.model, 'rb') as pickled_model:
+        model = pickle.load(pickled_model)
+
     params = json.load(open(args.params, 'r'))
     predictions = create_predictions(args.file, params["columns"], model)
     

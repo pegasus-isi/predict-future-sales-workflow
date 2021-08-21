@@ -108,17 +108,24 @@ class predict_future_sales_workflow:
     # --- Transformation Catalog (Executables and Containers) ----------------------
     def create_transformation_catalog(self):
         self.tc = TransformationCatalog()
+        
+        predict_sales_container = Container("predict_sales_container",
+            Container.SINGULARITY,
+            image="docker:///papajim/predict_sales_container:latest",
+            image_site="dockerhub"
+        )
 
         # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_hp_tuning.py"), is_stageable=True)\
+        xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_hp_tuning.py"), is_stageable=True, container=predict_sales_container)\
                                         .add_pegasus_profile(cores="16")
 
         # Find best params from xgboost hp tuning
-        xgboost_best_params = Transformation("xgboost_best_params", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_best_params.py"), is_stageable=True)
+        xgboost_best_params = Transformation("xgboost_best_params", site="condorpool", pfn=os.path.join(self.wf_dir, "bin/xgboost_best_params.py"), is_stageable=True, container=predict_sales_container)
         
         if self.xgb_tree_method == "gpu_hist":
             xgboost_hp_tuning.add_pegasus_profile(gpus="1")
         
+        self.tc.add_containers(predict_sales_container)
         self.tc.add_transformations(xgboost_hp_tuning, xgboost_best_params)
 
 
