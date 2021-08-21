@@ -108,8 +108,7 @@ class predict_future_sales_workflow:
                         .add_condor_profile(universe="vanilla")\
                         .add_pegasus_profile(
                             style="condor",
-                            data_configuration="nonsharedfs",
-                            auxillary_local="true"
+                            data_configuration="condorio"
                         )
 
         if self.panorama_monitoring:
@@ -129,8 +128,8 @@ class predict_future_sales_workflow:
 
         predict_sales_container = Container("predict_sales_container",
             Container.SINGULARITY,
-            image="docker:///papajim/predict_sales_container:latest",
-            image_site="dockerhub"
+            image="docker:///papajim/predict-sales-container:latest",
+            image_site="docker_hub"
         )
 
 
