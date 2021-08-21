@@ -80,9 +80,9 @@ class predict_future_sales_workflow:
         self.props["pegasus.catalog.replica.file"] = os.path.join(self.wf_dir, "replicas.yml")
         
         if self.panorama_monitoring:
-            props["pegasus.monitord.encoding"] = "json"
-            props["pegasus.catalog.workflow.amqp.events"] = "stampede.*"
-            props["pegasus.catalog.workflow.amqp.url"] = "amqps://panorama:panorama@hostname:5671/panorama/monitoring"
+            self.props["pegasus.monitord.encoding"] = "json"
+            self.props["pegasus.catalog.workflow.amqp.events"] = "stampede.*"
+            self.props["pegasus.catalog.workflow.amqp.url"] = "amqps://panorama:panorama@hostname:5671/panorama/monitoring"
         else:
             self.props["pegasus.monitord.encoding"] = "json"                                                                    
             self.props["pegasus.catalog.workflow.amqp.url"] = "amqp://friend:donatedata@msgs.pegasus.isi.edu:5672/prod/workflows"
