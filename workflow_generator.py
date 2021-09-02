@@ -164,8 +164,8 @@ class predict_future_sales_workflow:
         # Add the merge executable
         feature_merge = Transformation("feature_merge", site=target_site, pfn=os.path.join(self.wf_dir, "bin/feature_merge.py"), is_stageable=True, container=predict_sales_container)
 
-        # Add the xgboost hyperparameter tuning executable
-        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="local", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True, container=predict_sales_container)
+        # Add the xgboost hyperparameter tuning executable - DO NOT RUN THIS IN THE CONTAINER
+        xgboost_hp_tuning_workflow = Transformation("xgboost_hp_tuning_workflow", site="local", pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/workflow_generator.py"), is_stageable=True)
 
         # Add the xgboost hyperparameter tuning executable
         xgboost_hp_tuning = Transformation("xgboost_hp_tuning", site=target_site, pfn=os.path.join(self.wf_dir, "xgboost_hp_tuning_workflow/bin/xgboost_hp_tuning.py"), is_stageable=True, container=predict_sales_container)\
