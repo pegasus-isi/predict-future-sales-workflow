@@ -41,11 +41,12 @@ class predict_future_sales_workflow:
 
     
     # --- Init ---------------------------------------------------------------------
-    def __init__(self, daxfile="workflow.yml", output_single=False, monitoring=False, max_cores=1, xgb_args=default_xgb_args):
+    def __init__(self, daxfile="workflow.yml", output_single=False, singularity=False, monitoring=False, max_cores=1, xgb_args=default_xgb_args):
         self.daxfile = daxfile
         self.output_single = output_single
         self.max_cores = max_cores
         self.panorama_monitoring = monitoring
+        self.singularity = singularity
         self.xgb_trials = xgb_args["xgb_trials"]
         self.xgb_early_stopping = xgb_args["xgb_early_stopping"]
         self.xgb_tree_method = xgb_args["xgb_tree_method"]
@@ -127,8 +128,8 @@ class predict_future_sales_workflow:
         self.tc = TransformationCatalog()
 
         predict_sales_container = Container("predict_sales_container",
-            Container.SINGULARITY,
-            image="docker:///papajim/predict-sales-container:latest",
+            container_type = Container.SINGULARITY if self.singularity else Container.DOCKER
+            image="docker://papajim/predict-sales-container:latest",
             image_site="docker_hub"
         )
 
@@ -402,6 +403,7 @@ def main():
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
     parser.add_argument("--monitoring", action="store_true", help="Enable Panorama Monitoring", required=False)
     parser.add_argument("--output_single", action="store_true", help="Output Pegasus configuration in a single yaml file", required=False)
+    parser.add_argument("--singularity", action="store_true", help="Use Singularity instead of Docker", required=False)
     parser.add_argument("--output", metavar="STR", type=str, default="workflow.yml", help="Output file", required=False)
 
     args = parser.parse_args()
@@ -414,7 +416,7 @@ def main():
         "xgb_feat_lens": args.xgb_feat_len
     }
 
-    workflow = predict_future_sales_workflow(args.output, args.output_single, args.monitoring, args.max_cores, xgb_args)
+    workflow = predict_future_sales_workflow(args.output, args.output_single, args.monitoring, args.singularity, args.max_cores, xgb_args)
 
     workflow.create_pegasus_properties()
     workflow.create_sites_catalog()
