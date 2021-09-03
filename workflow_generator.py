@@ -128,7 +128,7 @@ class predict_future_sales_workflow:
         self.tc = TransformationCatalog()
 
         predict_sales_container = Container("predict_sales_container",
-            container_type = Container.SINGULARITY if self.singularity else Container.DOCKER
+            container_type = Container.SINGULARITY if self.singularity else Container.DOCKER,
             image="docker://papajim/predict-sales-container:latest",
             image_site="docker_hub"
         )
