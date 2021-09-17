@@ -6,6 +6,9 @@ This workflow is based on Predict Future Sales kaggle competition (https://www.k
 
 ## Dependencies
 
+- Pegasus v5.0.1+
+- Docker or Singularity
+
 ## File Description
 
 ## How To Run The Workflow
