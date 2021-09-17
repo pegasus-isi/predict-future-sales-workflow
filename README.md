@@ -29,7 +29,7 @@ Pegasus Workflow for Kaggle's Future Sales Predictiong Competition
 optional arguments:
   -h, --help            show this help message and exit
   --max_cores INT       Max cores that can be allocated
-  --xgb_trials INT      Max trials for XGBoost hyperparameter tuning
+  --xgb_trials INT      Number of trials for XGBoost hyperparameter tuning
   --xgb_early_stopping INT
                         XGBoost early stopping rounds
   --xgb_tree_method STR

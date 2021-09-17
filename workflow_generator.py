@@ -41,7 +41,7 @@ class predict_future_sales_workflow:
 
     
     # --- Init ---------------------------------------------------------------------
-    def __init__(self, daxfile="workflow.yml", output_single=False, singularity=False, monitoring=False, max_cores=1, xgb_args=default_xgb_args):
+    def __init__(self, daxfile="workflow.yml", output_single=False, monitoring=False, singularity=False, max_cores=1, xgb_args=default_xgb_args):
         self.daxfile = daxfile
         self.output_single = output_single
         self.max_cores = max_cores
@@ -397,7 +397,7 @@ def xgb_feat_len_check(xgb_feat_len):
 def main():
     parser = ArgumentParser(description="Pegasus Workflow for Kaggle's Future Sales Predictiong Competition")
     parser.add_argument("--max_cores", metavar="INT", type=int, default=1, help="Max cores that can be allocated", required=False)
-    parser.add_argument("--xgb_trials", metavar="INT", type=int, default=5, help="Max trials for XGBoost hyperparameter tuning", required=False)
+    parser.add_argument("--xgb_trials", metavar="INT", type=int, default=5, help="Number of trials for XGBoost hyperparameter tuning", required=False)
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--xgb_tree_method", metavar="STR", type=str, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type: ['hist', 'gpu_hist']", required=False)
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
@@ -416,7 +416,7 @@ def main():
         "xgb_feat_lens": args.xgb_feat_len
     }
 
-    workflow = predict_future_sales_workflow(args.output, args.output_single, args.monitoring, args.singularity, args.max_cores, xgb_args)
+    workflow = predict_future_sales_workflow(daxfile=args.output, output_single=args.output_single, monitoring=args.monitoring, singularity=args.singularity, max_cores=args.max_cores, xgb_args=xgb_args)
 
     workflow.create_pegasus_properties()
     workflow.create_sites_catalog()
