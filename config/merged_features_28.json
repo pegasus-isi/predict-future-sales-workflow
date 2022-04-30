@@ -5,6 +5,7 @@
     "item_id",
     "item_cnt_month",
     "item_category_id",
+    "item_seniority",
     "item_cnt_month_lag_1",
     "item_cnt_month_lag_2",
     "item_cnt_month_lag_3",

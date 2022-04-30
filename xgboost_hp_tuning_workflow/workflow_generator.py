@@ -181,7 +181,7 @@ class predict_future_sales_workflow:
                     xgboost_hp_tuning_outputs.append(temp_xgboost_params_out)
             
                     xgboost_hp_tuning_job = Job("xgboost_hp_tuning")\
-                                                .add_args("--file", xgboost_data_file, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", xgboost_params_out, "--col_filter", ",".join(new_features))\
+                                                .add_args("--file", xgboost_data_file, "--space", xgboost_hp_tuning_space, "--trials", self.xgb_trials, "--early_stopping_rounds", self.xgb_early_stopping, "--tree_method", self.xgb_tree_method, "--output", temp_xgboost_params_out, "--col_filter", " ".join(new_features))\
                                                 .add_inputs(xgboost_data_file, xgboost_hp_tuning_space)\
                                                 .add_outputs(temp_xgboost_params_out, stage_out=True, register_replica=True)
                     
@@ -217,7 +217,7 @@ def main():
     parser.add_argument("--xgb_early_stopping", metavar="INT", type=int, default=5, help="XGBoost early stopping rounds", required=False)
     parser.add_argument("--xgb_tree_method", metavar="STR", type=str, default="hist", choices=["hist", "gpu_hist"], help="XGBoost hist type", required=False)
     parser.add_argument("--xgb_feat_len", metavar="INT", type=int, nargs=2, default=[-1, -1], help="Train XGBoost by including features between [LEN_MIN, LEN_MAX], LEN_MIN>=5", required=False)
-    parser.add_argument("--xgb_default_cols", metavar="STR", type=str, nargs="+", default=["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id"], help="Columns to always use in hp tuning", required=False)
+    parser.add_argument("--xgb_default_cols", metavar="STR", type=str, nargs="+", default=["date_block_num", "shop_id", "item_id", "item_cnt_month", "item_category_id", "item_seniority"], help="Columns to always use in hp tuning", required=False)
     parser.add_argument("--xgb_hp_tuning_conf", metavar="STR", type=str, default="xgboost_hp_tuning_space.json", help="JSON file describing hp tuning space", required=False)
     parser.add_argument("--is_root_wf", action="store_true", help="Create the workflow as a root worfklow", required=False)
     parser.add_argument("--output_single", action="store_true", help="Output Pegasus configuration in a single yaml file", required=False)
