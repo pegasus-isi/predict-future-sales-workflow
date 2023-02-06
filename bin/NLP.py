@@ -67,9 +67,9 @@ def clean_text(words):
 
 def create_embeddings(vectorizer, data, embedding_dim, col_embed, col_id):
     vectors                      = vectorizer.fit_transform(data[col_embed])
-    feature_names_item_cat       = vectorizer.get_feature_names()
+    feature_names_item_cat       = vectorizer.get_feature_names_out()
     tf_idf_items                 = pd.DataFrame(vectors.todense())
-    X_embedded                   = TSNE(n_components = embedding_dim).fit_transform(vectors)
+    X_embedded                   = TSNE(init = "random", n_components = embedding_dim).fit_transform(vectors)
     items_embedded_df            = pd.DataFrame(X_embedded)
     items_embedded_df[col_id]    = data[col_id]
 	
