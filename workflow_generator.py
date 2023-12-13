@@ -344,7 +344,7 @@ class predict_future_sales_workflow:
                                                   "--basename", f"xgboost_hp_tuning_group_{group_num}",
                                                   "--force",
                                                   "--output-site", "local")\
-                                        .add_inputs(train_test_files[group_num]["train"])\
+                                        .add_inputs(train_test_files[group_num]["train"], forPlanner=True)\
                                         .add_outputs(xgboost_params_out, stage_out=True, register_replica=False)
 
             # --- Add model creation job -----------------------------------------------------
